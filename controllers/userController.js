@@ -10,11 +10,15 @@ const _ = require('underscore');
 let TOKEN_SECRET = 'secreto';
 router.use(express.json());
 
+
+
+
 /*REGISTRO USUARIO SIENDO ADMIN*/
 router.post('/registro', async(req, res) => {
     try {
         const password = await codifyPassword(req.body.password);
-        const fotoPrede = 'public/uploads/avatar/prede.png'
+        const fotoPrede = 'public/uploads/avatar/prede.png';
+        const detUltimoNum = await obtenerUltimoUsuario();
         if (req.body.avatar != '') {
             let avatar = req.body.avatar;
             let base64Image = avatar.split(';base64,').pop();
@@ -233,7 +237,13 @@ exports.deleteUser = async(req, res) => {
     }
 };
 
-
+/* CODIFICAR EL PASSWORD */
+async function codifyPassword(passwordBody) {
+    const saltos = await bcrypt.genSalt(10);
+    let password;
+    return password = await bcrypt.hash(passwordBody, saltos);
+}
+/*OBTENER ULTIMO USUARIO DEL SISTEMA */
 async function obtenerUltimoUsuario() {
     try {
         // Consultar todos los usuarios ordenados por el ID de manera descendente
