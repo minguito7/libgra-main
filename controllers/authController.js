@@ -9,6 +9,7 @@ const _ = require('underscore');
 const Usuario = require('../models/userModel.js');
 let TOKE_SECRETO = 'secreto';
 router.use(express.json());
+let TOKEN_SECRET = 'secreto';
 
 
 /* CODIFICAR EL PASSWORD */
@@ -54,6 +55,14 @@ async function obtenerUltimoUsuario() {
         throw error; // Puedes manejar el error según sea necesario en tu aplicación
     }
 }
+
+//-- lOGIN// Método para generar el token tras login correcto
+let generarToken = (login, role) => {
+    console.log(role);
+    return jwt.sign({ login: login, role: role },
+        TOKEN_SECRET, { expiresIn: 86400 });
+};
+
 
 /*REGISTRO USUARIO*/
 
@@ -139,6 +148,22 @@ router.post('/registro', async(req, res) => {
 
 })
 
+router.post('/login', async(req, res) => {
+    // login/*
+    const usuario = await Usuario.findOne({ EMAIL: req.body.EMAIL });
+    if (!usuario) return res.status(400).json({ error: 'Usuario no encontrado' });
+    console.log(usuario);
+    const passValida = await bcrypt.compare(req.body.PASSWORD, usuario.PASSWORD);
+    if (!passValida) return res.status(400).json({ error: 'contraseña no válida' })
+
+    if (usuario && passValida) {
+        res.send({ ok: true, token: generarToken(usuario.EMAIL, usuario.ROLE) });
+    } else {
+        res.send({ ok: false });
+    }
+
+
+})
 
 module.exports = router;
 /* 
