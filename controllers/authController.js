@@ -16,6 +16,7 @@ const directorioPadre = path.join(__dirname, '..');
 let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
 
 
+
 /* CODIFICAR EL PASSWORD */
 async function codifyPassword(passwordBody) {
     try {
@@ -91,6 +92,7 @@ const uploadAvatar = (req, res) => {
 
 router.post('/registro', upload.single('myFile'), async(req, res) => {
     try {
+
         comprobacion_dni = await Usuario.find({ DNI: req.body.DNI });
         console.log(comprobacion_dni)
         if (comprobacion_dni != '') {
@@ -99,8 +101,6 @@ router.post('/registro', upload.single('myFile'), async(req, res) => {
                 error: "Error este DNI ya existe"
             });
         } else {
-
-            let titulo1;
             const password = await codifyPassword(req.body.PASSWORD);
             const detUltimoNum = await obtenerUltimoUsuario();
             console.log(req.file);
@@ -119,13 +119,7 @@ router.post('/registro', upload.single('myFile'), async(req, res) => {
                 SEXO: req.body.SEXO.toLowerCase(),
                 NUM_USUARIO: detUltimoNum,
             });
-            if (req.body.SEXO.toLowerCase() === 'hombre') {
-                titulo1 = 'Sr. ';
-            } else if (req.body.SEXO.toLowerCase() === 'mujer') {
-                titulo1 = 'Sra. ';
-            } else {
-                titulo1 = 'Sre. ';
-            }
+            const titulo1 = titulos[req.body.SEXO.toLowerCase()] || 'Sre. ';
             nuevoUsuario.TITULO1 = titulo1;
             if (req.file == '' || req.file == undefined || req.file == null) {
                 // Si no se envía ninguna imagen, asigna una imagen predeterminada

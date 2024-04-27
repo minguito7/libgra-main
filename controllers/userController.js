@@ -12,7 +12,11 @@ let TOKEN_SECRET = 'secreto';
 router.use(express.json());
 const path = require('path');
 const multer = require('multer');
-
+const titulos = {
+    'hombre': 'Sr. ',
+    'mujer': 'Sra. ',
+    'otro': 'Sre. '
+};
 
 
 /* SUBIR EL AVATAR A UNA CARPETA */
@@ -133,7 +137,7 @@ router.post('/registro-admin', validate.protegerRuta(''), upload.single('myFile'
 })
 
 /* ENVIAR TODOS LOS USUARIOS */
-router.get('/', (req, res) => {
+router.get('/', validate.protegerRuta(''), (req, res) => {
     Usuario.find().then(x => {
         if (x.length > 0) {
             res.send({ ok: true, resultado: x });
@@ -148,8 +152,41 @@ router.get('/', (req, res) => {
     });
 });
 
+//RECUPERAR TODOS LOS USUARIOS ACTIVOS
+router.get('/activos', validate.protegerRuta(''), (req, res) => {
+    Usuario.find({ ACTIVO: true }).then(x => {
+        if (x.length > 0) {
+
+            res.send({ ok: true, resultado: x });
+        } else {
+            res.status(500).send({ ok: false, error: "No se encontro ningun usuario" })
+        }
+    }).catch(err => {
+        res.status(500).send({
+            ok: false,
+            error: err
+        });
+    });
+});
+//RECUPERAR TODOS LOS USUARIOS ACTIVOS - false
+router.get('/desactivos', validate.protegerRuta(''), (req, res) => {
+    Usuario.find({ ACTIVO: false }).then(x => {
+        if (x.length > 0) {
+            res.send({ ok: true, resultado: x });
+        } else {
+            res.status(500).send({ ok: false, error: "No se encontro ningun usuario" })
+        }
+    }).catch(err => {
+        res.status(500).send({
+            ok: false,
+            error: err
+        });
+    });
+});
+
+
 //RECUPERAR UN USUARIO
-router.get('/:id', async(req, res) => {
+router.get('/:id', validate.protegerRuta(''), async(req, res) => {
     try {
         const id = req.params._id;
         const usuario = await Usuario.findOne({ id });
@@ -164,8 +201,89 @@ router.get('/:id', async(req, res) => {
     }
 });
 
+//MODIFICAR USUARIO (NAME / EMAIL)
+router.put('/edit-profile/:id', validate.protegerRuta(''), async(req, res) => {
+    const id = req.params.id; // Asegúrate de que estás usando 'id' en lugar de '_id' si ese es el nombre del parámetro en la URL
+    let body = _.pick(req.body, ['NOMBRE', 'APELLIDOS', 'EMAIL', 'DIRECCION', 'ID_POBLACION', 'COD_POSTAL', 'SEXO']);
+
+    // Filtrar propiedades no definidas
+    Object.keys(body).forEach(key => {
+        if (body[key] === undefined) {
+            delete body[key];
+        }
+    });
+
+    try {
+        const actualizarTitulo = titulos[req.body.SEXO.toLowerCase()] || 'Sre. ';
+        body.TITULO1 = actualizarTitulo
+
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, body, { new: true, runValidators: true }).lean();
+
+        if (!usuarioActualizado) {
+            return res.status(404).json({
+                ok: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        res.json({
+            ok: true,
+            usuario: usuarioActualizado
+        });
+    } catch (err) {
+        res.status(400).json({
+            ok: false,
+            error: err
+        });
+    }
+});
+
+//MODIFICAR USUARIO (PASSWORD)
+router.post('/edit-password/:id', validate.protegerRuta(''), async(req, res) => {
+    let id = req.params.id;
+    let passEncriptada = await codifyPassword(req.body.PASSWORD);
+
+    try {
+        const passActualizadaUsu = await Usuario.findByIdAndUpdate(id, { $set: { PASSWORD: passEncriptada } }, { new: true, runValidators: true }).lean();
+        if (!passActualizadaUsu) {
+            return res.status(404).json({
+                ok: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        res.json({
+            ok: true,
+            usuario: passActualizadaUsu
+        });
+    } catch (err) {
+        res.status(400).json({
+            ok: false,
+            error: err
+        });
+    }
+
+});
+
+/* BORRAR USUARIO - ACTUALIZAR ESTADO ACTIVO A false */
+router.put('/edit-activo/:id', validate.protegerRuta(''), async(req, res) => {
+    try {
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(
+            req.params.id, { $set: { ACTIVO: false } }, { new: true, runValidators: true }
+        ).lean();
+
+        if (!usuarioActualizado) {
+            return res.status(404).json({ ok: false, mensaje: 'Usuario no encontrado' });
+        }
+        res.json({ ok: true, mensaje: 'Usuario desactivado correctamente', usuario: usuarioActualizado });
+    } catch (error) {
+        console.error('Error desactivando el usuario:', error);
+        res.status(500).json({ ok: false, mensaje: 'Error al desactivar el usuario', error });
+    }
+});
 
 
+//MODIFICAR USUARIO (AVATAR)
 
 
 module.exports = router;
