@@ -28,9 +28,10 @@ mongoose.connect(DB_URI)
 app.use(cors());
 app.use(express.json());
 
-// Middleware para analizar cuerpos de solicitud
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+
+// Configurar body-parser para permitir tamaños de cuerpo más grandes
+app.use(bodyParser.json({ limit: '100kb' }));
+app.use(bodyParser.urlencoded({ limit: '100kb', extended: true }));
 
 app.use(methodOverride(function(req, res) {
     if (req.body && typeof req.body === 'object' && '_method' in req.body) {
@@ -46,7 +47,7 @@ const PORT = process.env.PORT || 3000; // Utiliza el puerto proporcionado por el
 app.use(express.static('/public/uploads'));
 app.get('/', auth)
 app.use('/auth', auth);
-//app.use('/usuario', usuario);
+app.use('/usuario', usuario);
 
 
 // Escuchar en el puerto especificado

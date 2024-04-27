@@ -2,14 +2,20 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
+const path = require('path');
 
 let router = express.Router();
 const validates = require('./validate-token.js');
 const _ = require('underscore');
 const Usuario = require('../models/userModel.js');
+const multer = require('multer');
+const sharp = require('sharp');
+
 let TOKE_SECRETO = 'secreto';
 router.use(express.json());
 let TOKEN_SECRET = 'secreto';
+const directorioPadre = path.join(__dirname, '..');
+let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
 
 
 /* CODIFICAR EL PASSWORD */
@@ -63,16 +69,35 @@ let generarToken = (login, role) => {
         TOKEN_SECRET, { expiresIn: 86400 });
 };
 
+/* SUBIR EL AVATAR A UNA CARPETA */
+const storage = multer.diskStorage({
+
+    destination: function(req, file, cb) {
+        cb(null, guardarImagen)
+    },
+    filename: function(req, file, cb) {
+        console.log(file);
+
+        cb(null, `${Date.now()}-${file.originalname}`)
+    }
+})
+
+const upload = multer({ storage: storage });
+//upload.single('myFile');
+
+const uploadAvatar = (req, res) => {
+    res.send({ data: 'Enviar un archivo' })
+}
 
 /*REGISTRO USUARIO*/
 
-router.post('/registro', async(req, res) => {
+router.post('/registro', upload.single('myFile'), async(req, res) => {
     try {
 
         let titulo1;
         const password = await codifyPassword(req.body.PASSWORD);
         const detUltimoNum = await obtenerUltimoUsuario();
-
+        console.log(req.myFile);
         const fotoPrede = 'public/uploads/avatar/prede.png';
 
         // Crear un nuevo usuario
@@ -120,10 +145,14 @@ router.post('/registro', async(req, res) => {
             // TODO
             //FALTA DETERMINAR EL TIPO DE LA IMAGEN
             let rutaImagen = Date.now() + 'avatar' + req.body.NOMBRE + '.png';
-
+            //COMPRIMIR LA IMAGEN
+            const compressedImage = await sharp(Buffer.from(base64Image, 'base64'))
+                .resize({ width: 300 }) // Redimensionar la imagen si es necesario
+                .jpeg({ quality: 80 }) // Comprimir la imagen JPEG al 80% de calidad
+                .toBuffer();
 
             //GUARDAR LA IMAGEN EN UN DIRECTORIO
-            fs.writeFile('public/uploads/avatar/' + rutaImagen + base64Image, { encoding: 'base64' }, (error) => {
+            fs.writeFile('public/uploads/avatar/' + rutaImagen + compressedImage, { encoding: 'base64' }, (error) => {
                 nuevoUsuario.AVATAR = 'public/uploads/avatar/' + rutaImage;
                 nuevoUsuario.then(x => {
 
