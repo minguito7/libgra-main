@@ -4,25 +4,45 @@ let TOKEN_SECRET = 'secreto';
 let validaToken = (token) => {
     try {
         let resultado = jwt.verify(token, TOKEN_SECRET);
-        console.log(resultado + 'lloran2');
         return resultado;
     } catch (error) {}
 };
 
 
 
-let protegerRuta = role => {
+let protegerRuta = rolesPermitidos => {
     return (req, res, next) => {
         let token = req.headers['authorization'];
 
-        if (token) {
-            token = token.substring(7);
-            let resultado = validaToken(token);
-            console.log(resultado.role);
-            if (resultado && (role === "" || role === resultado.role)) next();
-            else res.send({ ok: false, error: `Usuario no autorizado, role necesrario: ${role} y tu rol es este ${resultado.role}` });
-        } else res.send({ ok: false, error: `Usuario no autorizado, role necesrario: ${role} y tu rol es este ${resultado.role}` });
-    }
+        if (!token) return res.send({ ok: false, error: "Token no proporcionado" });
+
+        token = token.substring(7);
+        let resultado = validaToken(token);
+
+        if (!resultado) return res.send({ ok: false, error: "Token inválido" });
+
+        if (Array.isArray(rolesPermitidos)) {
+            if (!rolesPermitidos.includes("") && !rolesPermitidos.includes(resultado.role)) {
+                return res.send({ ok: false, error: `Usuario no autorizado, roles necesarios: ${rolesPermitidos.join(', ')}` });
+            }
+        } else {
+            if (rolesPermitidos !== "" && rolesPermitidos !== resultado.role) {
+                return res.send({ ok: false, error: `Usuario no autorizado, rol necesario: ${rolesPermitidos}` });
+            }
+        }
+        next();
+    };
 };
+
+function obtenerUsuarioDesdeToken(token) {
+    try {
+        const decoded = jwt.verify(token, TOKEN_SECRET); // 'secreto' es la clave secreta utilizada para firmar el token
+        console.log(decoded.usuario);
+        return decoded.usuario; // Suponiendo que la información del usuario está almacenada en el campo 'usuario' del token
+
+    } catch (error) {
+        return null; // Devuelve null si hay un error al decodificar el token
+    }
+}
 
 module.exports = { protegerRuta: protegerRuta };

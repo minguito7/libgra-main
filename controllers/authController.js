@@ -5,7 +5,6 @@ const fs = require('fs');
 const path = require('path');
 
 let router = express.Router();
-const validates = require('./validate-token.js');
 const _ = require('underscore');
 const Usuario = require('../models/userModel.js');
 const multer = require('multer');

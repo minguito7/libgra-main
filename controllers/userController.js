@@ -70,7 +70,7 @@ async function obtenerUltimoUsuario() {
 
 /*REGISTRO USUARIO SIENDO ADMIN*/
 // Crear un nuevo usuario
-router.post('/registro-admin', validate.protegerRuta('lector'), upload.single('myFile'), async(req, res) => {
+router.post('/registro-admin', validate.protegerRuta(''), upload.single('myFile'), async(req, res) => {
     try {
         comprobacion_dni = await Usuario.find({ DNI: req.body.DNI });
 
@@ -147,6 +147,25 @@ router.get('/', (req, res) => {
         });
     });
 });
+
+//RECUPERAR UN USUARIO
+router.get('/:id', async(req, res) => {
+    try {
+        const id = req.params._id;
+        const usuario = await Usuario.findOne({ id });
+        //console.log(usuario);
+        if (usuario) {
+            res.send({ ok: true, resultado: usuario });
+        } else {
+            res.status(404).send({ ok: false, error: "No se encontró ningún usuario" });
+        }
+    } catch (error) {
+        res.status(500).send({ ok: false, error: "Error al buscar el usuario" });
+    }
+});
+
+
+
 
 
 module.exports = router;
