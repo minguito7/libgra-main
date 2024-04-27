@@ -11,7 +11,6 @@ const Usuario = require('../models/userModel.js');
 const multer = require('multer');
 const sharp = require('sharp');
 
-let TOKE_SECRETO = 'secreto';
 router.use(express.json());
 let TOKEN_SECRET = 'secreto';
 const directorioPadre = path.join(__dirname, '..');
@@ -76,7 +75,7 @@ const storage = multer.diskStorage({
         cb(null, guardarImagen)
     },
     filename: function(req, file, cb) {
-        console.log(file);
+        // console.log(file);
 
         cb(null, `${Date.now()}-${file.originalname}`)
     }
@@ -93,41 +92,48 @@ const uploadAvatar = (req, res) => {
 
 router.post('/registro', upload.single('myFile'), async(req, res) => {
     try {
-
-        let titulo1;
-        const password = await codifyPassword(req.body.PASSWORD);
-        const detUltimoNum = await obtenerUltimoUsuario();
-        console.log(req.myFile);
-        const fotoPrede = 'public/uploads/avatar/prede.png';
-
-        // Crear un nuevo usuario
-        const nuevoUsuario = new Usuario({
-            DNI: req.body.DNI,
-            NOMBRE: req.body.NOMBRE,
-            APELLIDOS: req.body.APELLIDOS,
-            EMAIL: req.body.EMAIL.toLowerCase(),
-            PASSWORD: password,
-            DIRECCION: req.body.DIRECCION,
-            ID_POBLACION: req.body.ID_POBLACION,
-            COD_POSTAL: req.body.COD_POSTAL,
-            SEXO: req.body.SEXO.toLowerCase(),
-            NUM_USUARIO: detUltimoNum,
-        });
-        if (req.body.SEXO.toLowerCase() === 'hombre') {
-            titulo1 = 'Sr. ';
-        } else if (req.body.SEXO.toLowerCase() === 'mujer') {
-            titulo1 = 'Sra. ';
+        comprobacion_dni = await Usuario.find({ DNI: req.body.DNI });
+        console.log(comprobacion_dni)
+        if (comprobacion_dni != '') {
+            res.status(400).send({
+                ok: false,
+                error: "Error este DNI ya existe"
+            });
         } else {
-            titulo1 = 'Sre. ';
-        }
-        nuevoUsuario.TITULO1 = titulo1;
 
-        if (req.body.AVATAR == '' || req.body.AVATAR == undefined) {
+            let titulo1;
+            const password = await codifyPassword(req.body.PASSWORD);
+            const detUltimoNum = await obtenerUltimoUsuario();
+            console.log(req.file);
+            const fotoPrede = 'public/uploads/avatar/prede.png';
 
-
-            // Si no se envía ninguna imagen, asigna una imagen predeterminada
-            nuevoUsuario.AVATAR = fotoPrede;
-
+            // Crear un nuevo usuario
+            const nuevoUsuario = new Usuario({
+                DNI: req.body.DNI,
+                NOMBRE: req.body.NOMBRE,
+                APELLIDOS: req.body.APELLIDOS,
+                EMAIL: req.body.EMAIL.toLowerCase(),
+                PASSWORD: password,
+                DIRECCION: req.body.DIRECCION,
+                ID_POBLACION: req.body.ID_POBLACION,
+                COD_POSTAL: req.body.COD_POSTAL,
+                SEXO: req.body.SEXO.toLowerCase(),
+                NUM_USUARIO: detUltimoNum,
+            });
+            if (req.body.SEXO.toLowerCase() === 'hombre') {
+                titulo1 = 'Sr. ';
+            } else if (req.body.SEXO.toLowerCase() === 'mujer') {
+                titulo1 = 'Sra. ';
+            } else {
+                titulo1 = 'Sre. ';
+            }
+            nuevoUsuario.TITULO1 = titulo1;
+            if (req.file == '' || req.file == undefined || req.file == null) {
+                // Si no se envía ninguna imagen, asigna una imagen predeterminada
+                nuevoUsuario.AVATAR = fotoPrede;
+            } else {
+                nuevoUsuario.AVATAR = req.file.path;
+            }
             nuevoUsuario.save().then(x => {
                 res.status(200).send({
                     ok: true,
@@ -139,42 +145,11 @@ router.post('/registro', upload.single('myFile'), async(req, res) => {
                     error: "Error guardando el usuario" + err
                 });
             });
-        } else {
-            let avatar = req.body.AVATAR;
-            let base64Image = avatar.split(';base64,').pop();
-            // TODO
-            //FALTA DETERMINAR EL TIPO DE LA IMAGEN
-            let rutaImagen = Date.now() + 'avatar' + req.body.NOMBRE + '.png';
-            //COMPRIMIR LA IMAGEN
-            const compressedImage = await sharp(Buffer.from(base64Image, 'base64'))
-                .resize({ width: 300 }) // Redimensionar la imagen si es necesario
-                .jpeg({ quality: 80 }) // Comprimir la imagen JPEG al 80% de calidad
-                .toBuffer();
-
-            //GUARDAR LA IMAGEN EN UN DIRECTORIO
-            fs.writeFile('public/uploads/avatar/' + rutaImagen + compressedImage, { encoding: 'base64' }, (error) => {
-                nuevoUsuario.AVATAR = 'public/uploads/avatar/' + rutaImage;
-                nuevoUsuario.then(x => {
-
-                    res.status(200).send({
-                        ok: true,
-                        resultado: x
-                    })
-                }).catch(err => {
-                    res.status(400).send({
-                        ok: false,
-                        error: "Error guardando la foto del el usuario" + err
-                    });
-                });
-
-            });
         }
     } catch (error) {
         console.error('Error en el registro:', error);
         res.status(500).json({ mensaje: 'Error en el registro' });
     }
-
-
 })
 
 router.post('/login', async(req, res) => {

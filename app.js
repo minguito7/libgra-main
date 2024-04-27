@@ -47,7 +47,7 @@ const PORT = process.env.PORT || 3000; // Utiliza el puerto proporcionado por el
 app.use(express.static('/public/uploads'));
 app.get('/', auth)
 app.use('/auth', auth);
-app.use('/usuario', usuario);
+app.use('/usuarios', usuario);
 
 
 // Escuchar en el puerto especificado

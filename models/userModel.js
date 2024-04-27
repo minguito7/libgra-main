@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-    DNI: { type: String, required: true },
+    DNI: { type: String, unique: true, required: true },
     NOMBRE: { type: String, lowercase: true },
     APELLIDOS: { type: String, lowercase: true },
     EMAIL: { type: String, required: true, unique: true, lowercase: true },

@@ -14,13 +14,14 @@ let validaToken = (token) => {
 let protegerRuta = role => {
     return (req, res, next) => {
         let token = req.headers['authorization'];
+
         if (token) {
             token = token.substring(7);
             let resultado = validaToken(token);
-            console.log(resultado);
-            if (resultado && (role === "" || role === resultado.ROLE)) next();
-            else res.send({ ok: false, error: "Usuario no autorizado" });
-        } else res.send({ ok: false, error: "Usuario no autorizado" });
+            console.log(resultado.role);
+            if (resultado && (role === "" || role === resultado.role)) next();
+            else res.send({ ok: false, error: `Usuario no autorizado, role necesrario: ${role} y tu rol es este ${resultado.role}` });
+        } else res.send({ ok: false, error: `Usuario no autorizado, role necesrario: ${role} y tu rol es este ${resultado.role}` });
     }
 };
 
