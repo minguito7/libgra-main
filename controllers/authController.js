@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
-
+//
 let router = express.Router();
 const _ = require('underscore');
 const Usuario = require('../models/userModel.js');
