@@ -1,3 +1,4 @@
+
 const Usuario = require('../models/userModel.js');
 const bcrypt = require('bcrypt');
 const express = require('express');
