@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
     DNI: { type: String, unique: true, required: true },
     NOMBRE: { type: String, lowercase: true },
+    NAMEAPP: { type: String, lowercase: true, unique: true, required: true },
     APELLIDOS: { type: String, lowercase: true },
     EMAIL: { type: String, required: true, unique: true, lowercase: true },
     PASSWORD: { type: String, required: true },
@@ -15,8 +16,9 @@ const userSchema = new mongoose.Schema({
     SEXO: { type: String, lowercase: true },
     ROLE: { type: String, default: 'lector' },
     ACTIVO: { type: Boolean, default: 1 },
-    NUM_USUARIO: { type: Number },
-    AVATAR: { type: String }
+    NUM_USUARIO: { type: Number, unique: true },
+    AVATAR: { type: String },
+    AMIGOS: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }], // Referencia al esquema de usuario]
 });
 
 // Crear el modelo de usuario a partir del esquema

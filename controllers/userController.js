@@ -18,6 +18,8 @@ const titulos = {
     'mujer': 'Sra. ',
     'otro': 'Sre. '
 };
+const directorioPadre = path.join(__dirname, '..');
+let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
 
 
 /* SUBIR EL AVATAR A UNA CARPETA */
@@ -169,11 +171,11 @@ router.get('/activos', validate.protegerRuta(''), (req, res) => {
         });
     });
 });
-//RECUPERAR TODOS LOS USUARIOS ACTIVOS - false
+//RECUPERAR TODOS LOS USUARIOS NO ACTIVOS - false
 router.get('/desactivos', validate.protegerRuta(''), (req, res) => {
     Usuario.find({ ACTIVO: false }).then(x => {
         if (x.length > 0) {
-            res.send({ ok: true, resultado: x });
+            res.send({ ok: guardarImagenrue, resultado: x });
         } else {
             res.status(500).send({ ok: false, error: "No se encontro ningun usuario" })
         }
@@ -285,6 +287,39 @@ router.put('/edit-activo/:id', validate.protegerRuta(''), async(req, res) => {
 
 
 //MODIFICAR USUARIO (AVATAR)
+router.post('/modify-avatar/:id', upload.single('myFile'), async(req, res) => {
+    try {
+        // Validar que se haya enviado un archivo
+        if (!req.file) {
+            return res.status(400).send({
+                ok: false,
+                error: "Por favor, sube un archivo"
+            });
+        }
 
+        // Buscar al usuario por su DNI o por algún identificador único
+        const usuario = await Usuario.findOne({ id: req.body.id });
+        console.log(req.body.id);
+        if (!usuario) {
+            return res.status(404).send({
+                ok: false,
+                error: "Usuario no encontrado"
+            });
+        }
+
+        // Actualizar el avatar del usuario
+        usuario.AVATAR = req.file.path;
+        await usuario.save();
+
+        res.status(200).send({
+            ok: true,
+            mensaje: "Avatar actualizado correctamente",
+            resultado: usuario
+        });
+    } catch (error) {
+        console.error('Error al cambiar el avatar:', error);
+        res.status(500).json({ mensaje: 'Error al cambiar el avatar' });
+    }
+});
 
 module.exports = router;

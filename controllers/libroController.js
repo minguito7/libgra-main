@@ -4,7 +4,7 @@ exports.addBook = async (req, res) => {
     try {
       // Obtener los datos del formulario
       const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
-  
+      /home/david/Desktop/libgra-main/public/uploads/pdf/1718789174429-pdf_EL PRINCIPITO.pdf
       let archivoPath;
       let imagenBase64;
   
@@ -98,6 +98,6 @@ exports.getAllBooks = async (req, res) => {
       res.status(200).send('Libro eliminado correctamente');
     } catch (error) {
       console.error(error);
-      res.status(500).send('Hubo un error al eliminar el libro');
+      res.status(500).sen/home/david/Desktop/libgra-main/public/uploads/pdf/1718789174429-pdf_EL PRINCIPITO.pdfd('Hubo un error al eliminar el libro');
     }
   };
