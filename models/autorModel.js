@@ -5,8 +5,8 @@ const autorSchema = new mongoose.Schema({
   apellidos: { type: String, required: true },
   fecha_nacimiento: { type: Date },
   nacionalidad: { type: String },
-  generos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Genero' }], 
-  libros: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Libro' }] // Array de referencias a documentos de género
+  generos_autor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Genero' }], 
+  libros_autor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Libro' }] // Array de referencias a documentos de género
   // Array de referencias a documentos de género
 });
 

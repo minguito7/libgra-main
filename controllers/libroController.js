@@ -2,45 +2,61 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+const validate = require('./validate-token');
 const Libro  = require('../models/libroModel.js'); // Asegúrate de que esta ruta es correcta
 
 const { Autor } = require('../models/autorModel.js');
 const { Categoria } = require('../models/categoriaModel.js');
 const { Genero } = require('../models/generoModel.js');
 const { Resena } = require('../models/resenaModel.js');
+const directorioPadre = path.join(__dirname, '..');
+let guardarImagen = path.join(directorioPadre, '/public/uploads/imgLibros/');
+let guardarPDF = path.join(directorioPadre, '/public/uploads/pdfLibros/');
 
-// Función para calcular la letra del DNI (si es relevante)
-const calcularLetraDNI = (numerosDNI) => {
-    const letras = 'TRWAGMYFPDXBNJZSQVHLCKE';
-    const modulo = parseInt(numerosDNI, 10) % 23;
-    return letras.charAt(modulo);
-};
- 
+// Configuración del almacenamiento de archivos
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        // Define las carpetas para imágenes y PDFs
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, guardarImagen); // Carpeta para imágenes
+        } else if (file.mimetype === 'application/pdf') {
+            cb(null, guardarPDF); // Carpeta para PDFs
+        } else {
+            cb(new Error('Tipo de archivo no soportado'), ''); // Manejo de errores si el archivo no es imagen ni PDF
+        }
+    },
+    filename: function (req, file, cb) {
+        // Usa el timestamp para evitar conflictos de nombres de archivos
+        const timestamp = Date.now();
+        const fileExtension = path.extname(file.originalname);
+        const fileName = `${timestamp}-${path.basename(file.originalname, fileExtension)}${fileExtension}`;
+        cb(null, fileName);
+    }
+})
+
+// Crear un middleware de multer con la configuración de almacenamiento
+const upload = multer({ storage: storage });
+
 // Ruta para añadir un libro
-router.post('/add-book', async (req, res) => {
+router.post('/add-libro', validate.protegerRuta('') ,upload.array('files', 2) , async (req, res) => {
     try {
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;
-        let imagenBase64;
+        let avatarPath
+        req.files.forEach(file => {
+            if (file.mimetype.startsWith('image/')) {
+                // Procesar imágenes
+                 console.log(file);
+                 avatarPath = file ? file.path : 'public/uploads/imgLibro/prede.png';
+                
+            } else if (file.mimetype === 'application/pdf') {
+                // Procesar PDFs
+                 archivoPath = file.path; // La ruta del archivo PDF subido
+            }
+        });
 
-        // Si se envía un archivo de imagen
-        if (req.file && req.file.mimetype.startsWith('image')) {
-            const imageData = fs.readFileSync(req.file.path);
-            imagenBase64 = `data:${req.file.mimetype};base64,${imageData.toString('base64')}`;
-            fs.unlinkSync(req.file.path);
-        } else if (req.body.imagen && req.body.imagen.startsWith('data:image')) {
-            imagenBase64 = req.body.imagen;
-        }
-
-        // Si se envía un archivo PDF
-        if (req.file && req.file.mimetype === 'application/pdf') {
-            const pdfFileName = req.file.originalname + `.pdf`;
-            const pdfFilePath = path.join(__dirname, '../public/uploads/pdf', pdfFileName);
-            fs.renameSync(req.file.path, pdfFilePath);
-            archivoPath = pdfFilePath;
-        }
-
-        // Crear una nueva instancia del modelo de libro con los datos
+ // Crear una nueva instancia del modelo de libro con los datos
         const newBook = new Libro({
             titulo,
             id_autor,
@@ -51,12 +67,18 @@ router.post('/add-book', async (req, res) => {
             descripcion,
             activo,
             archivo: archivoPath,
-            imagen: imagenBase64
+            imagen: avatarPath
         });
 
         // Guardar el libro en la base de datos
-        await newBook.save();
-        res.status(201).send('Libro guardado con éxito');
+        
+      
+        const libroGuardado = await newBook.save();
+        res.status(200).send({
+            ok: true,
+            resultado: libroGuardado
+        });
+
     } catch (error) {
         console.error(error);
         res.status(500).send('Hubo un error al guardar el libro');
@@ -67,7 +89,13 @@ router.post('/add-book', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
       const libros = await Libro.find()
-          .populate('id_autor') //AutorModel Poblar datos del autor
+          .populate({
+            path: 'id_autor',
+            populate: [
+              { path: 'generos' },  // Poblar generos dentro de Autor
+              { path: 'libros' }    // Poblar libros dentro de Autor
+            ]
+          }) 
           .populate('categorias') // Poblar datos de la categoría
           .populate('generos')// Poblar datos del género
           .populate('resenas') 

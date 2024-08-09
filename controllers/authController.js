@@ -190,6 +190,15 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
         // Obtener el último número de usuario
         const detUltimoNum = await obtenerUltimoUsuario();
 
+        // Si se envía un archivo de imagen
+        if (req.file && req.file.mimetype.startsWith('image')) {
+            const imageData = fs.readFileSync(req.file.path);
+            imagenBase64 = `data:${req.file.mimetype};base64,${imageData.toString('base64')}`;
+            fs.unlinkSync(req.file.path);
+        } else if (req.body.imagen && req.body.imagen.startsWith('data:image')) {
+            imagenBase64 = req.body.imagen;
+        }
+
         // Determinar el título según el sexo
 
         const titulo1 = titulos[SEXO.toLowerCase()] || 'Sre. ';

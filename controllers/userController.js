@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
-const validates = require('./validate-token.js');
+
 let router = express.Router();
 const validate = require('./validate-token');
 const _ = require('underscore');
