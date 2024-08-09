@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const auth = require('./controllers/authController.js');
 const usuario = require('./controllers/userController.js');
+const libros = require('./controllers/libroController.js');
 const methodOverride = require('method-override');
 
 const app = express();
@@ -45,9 +46,10 @@ app.use(methodOverride(function(req, res) {
 const PORT = process.env.PORT || 3000; // Utiliza el puerto proporcionado por el entorno o 3000 si no se proporciona ninguno
 
 app.use(express.static('/public/uploads'));
-app.get('/', auth)
+app.get('/', auth);
 app.use('/auth', auth);
 app.use('/usuarios', usuario);
+app.use('/libros', libros);
 
 
 // Escuchar en el puerto especificado

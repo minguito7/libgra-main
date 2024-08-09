@@ -12,6 +12,12 @@ const sharp = require('sharp');
 
 router.use(express.json());
 let TOKEN_SECRET = 'secreto';
+const titulos = {
+    'hombre': 'Sr. ',
+    'mujer': 'Sra. ',
+    'otro': 'Sre. '
+};
+
 const directorioPadre = path.join(__dirname, '..');
 let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
 
@@ -109,21 +115,64 @@ const uploadAvatar = (req, res) => {
     res.send({ data: 'Enviar un archivo' })
 }
 
+function calcularLetraDNI(dniNumeros) {
+    // Tabla de letras
+    const letras = 'TRWAGMYFPDXBNJZSQVHLCKE';
+
+    // Asegurarse de que dniNumeros tiene 8 dígitos y es un número
+    if (!/^\d{8}$/.test(dniNumeros)) {
+        throw new Error('El número del DNI debe tener 8 dígitos.');
+    }
+
+    // Convertir a número entero y calcular el módulo 23
+    const modulo = parseInt(dniNumeros, 10) % 23;
+
+    // Devolver la letra correspondiente
+    return letras.charAt(modulo);
+}
+
 /*REGISTRO USUARIO*/
 
 router.post('/registro', upload.single('myFile'), async (req, res) => {
     try {
         const { DNI, NAMEAPP, PASSWORD, NOMBRE, APELLIDOS, EMAIL, DIRECCION, ID_POBLACION, COD_POSTAL, SEXO } = req.body;
 
+        if(!DNI){
+            return res.status(400).send({
+                ok: false,
+                error: "Error, NO HA INDICADO UN DNI"
+            });
+        }
+
+        //COMPROBACIÓN SI CONCUERDA EL NUMERO DEL DNI CON LA LETRA
+        // Y SI ESTAS COINCIDEN CON EL DNI PROPORCIONADO
+
+        /*const numerosDNI = DNI.slice(0, 8);
+        const letraDNI = await calcularLetraDNI(numerosDNI);
+        const comproacion_valido_dni = numerosDNI+letraDNI;
+
+        if (comproacion_valido_dni!=DNI) {
+            return res.status(400).send({
+                ok: false,
+                error: "Error, este DNI no es valido, el numero no concuerda con la letra"
+            });
+        }*/
+
         // Comprobar si el DNI ya existe
-        const comprobacion_dni = await Usuario.findOne({ DNI });
-        if (comprobacion_dni) {
+        const comprobacion_existe_dni = await Usuario.findOne({ DNI });
+        
+        if (comprobacion_existe_dni) {
             return res.status(400).send({
                 ok: false,
                 error: "Error, este DNI ya existe"
             });
         }
-
+        if(!NAMEAPP){
+            return res.status(400).send({
+                ok: false,
+                error: "Error, TIENE QUE ESCOGER UN NOMBRE DE APLICACION"
+            });
+        }
         // Comprobar si el nickname ya existe
         const comprobacion_nickname = await Usuario.findOne({ NAMEAPP });
         if (comprobacion_nickname) {
@@ -142,6 +191,7 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
         const detUltimoNum = await obtenerUltimoUsuario();
 
         // Determinar el título según el sexo
+
         const titulo1 = titulos[SEXO.toLowerCase()] || 'Sre. ';
 
         // Determinar la ruta del avatar
@@ -175,7 +225,7 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
         console.error('Error en el registro:', error);
         res.status(500).json({ mensaje: 'Error en el registro' });
     }
-});EMAIL
+});
 
 /*  LOGIN* 
 router.post('/login', async(req, res) => {

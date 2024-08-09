@@ -8,6 +8,8 @@ const validates = require('./validate-token.js');
 let router = express.Router();
 const validate = require('./validate-token');
 const _ = require('underscore');
+
+const mongoose = require('mongoose');
 const sharp = require('sharp');
 let TOKEN_SECRET = 'secreto';
 router.use(express.json());
@@ -21,6 +23,26 @@ const titulos = {
 const directorioPadre = path.join(__dirname, '..');
 let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
 
+/* DETERMINAR NAMEAPP, SI EXISTE UNO IGUAL DARLE OPCIONES DISTINTAS */
+async function obtenerVariantesNickname(nickName) {
+    const variantes = [];
+    const maxVariantes = 5; // Número máximo de variantes sugeridas
+    let suffix = 1;
+
+    // Genera variantes hasta encontrar algunas disponibles
+    while (variantes.length < maxVariantes) {
+        const nuevoNickname = `${nickName}${suffix}`;
+        const existe = await Usuario.findOne({ NAMEAPP: nuevoNickname });
+
+        if (!existe) {
+            variantes.push(nuevoNickname);
+        }
+
+        suffix++;
+    }
+
+    return variantes;
+}
 
 /* SUBIR EL AVATAR A UNA CARPETA */
 const storage = multer.diskStorage({
@@ -79,60 +101,85 @@ async function obtenerUltimoUsuario() {
 // Crear un nuevo usuario
 router.post('/registro-admin', validate.protegerRuta(''), upload.single('myFile'), async(req, res) => {
     try {
-        comprobacion_dni = await Usuario.find({ DNI: req.body.DNI });
+        const { DNI, NAMEAPP, PASSWORD, NOMBRE, APELLIDOS, EMAIL, DIRECCION, ID_POBLACION, COD_POSTAL, SEXO } = req.body;
 
-        if (comprobacion_dni != '') {
-            res.status(400).send({
+        if(!DNI){
+            return res.status(400).send({
                 ok: false,
-                error: "Error este DNI ya existe"
-            });
-        } else {
-
-            let titulo1;
-            const password = await codifyPassword(req.body.PASSWORD);
-            const detUltimoNum = await obtenerUltimoUsuario();
-            //console.log(req.file);
-            const fotoPrede = 'public/uploads/avatar/prede.png';
-
-            // Crear un nuevo usuario
-            const nuevoUsuario = new Usuario({
-                DNI: req.body.DNI,
-                NOMBRE: req.body.NOMBRE,
-                APELLIDOS: req.body.APELLIDOS,
-                EMAIL: req.body.EMAIL.toLowerCase(),
-                PASSWORD: password,
-                DIRECCION: req.body.DIRECCION,
-                ID_POBLACION: req.body.ID_POBLACION,
-                COD_POSTAL: req.body.COD_POSTAL,
-                SEXO: req.body.SEXO.toLowerCase(),
-                NUM_USUARIO: detUltimoNum,
-            });
-            if (req.body.SEXO.toLowerCase() === 'hombre') {
-                titulo1 = 'Sr. ';
-            } else if (req.body.SEXO.toLowerCase() === 'mujer') {
-                titulo1 = 'Sra. ';
-            } else {
-                titulo1 = 'Sre. ';
-            }
-            nuevoUsuario.TITULO1 = titulo1;
-            if (req.file == '' || req.file == undefined || req.file == null) {
-                // Si no se envía ninguna imagen, asigna una imagen predeterminada
-                nuevoUsuario.AVATAR = fotoPrede;
-            } else {
-                nuevoUsuario.AVATAR = req.file.path;
-            }
-            nuevoUsuario.save().then(x => {
-                res.status(200).send({
-                    ok: true,
-                    resultado: x
-                });
-            }).catch(err => {
-                res.status(400).send({
-                    ok: false,
-                    error: "Error guardando el usuario" + err
-                });
+                error: "Error, NO HA INDICADO UN DNI"
             });
         }
+
+        // Comprobar si el DNI ya existe
+        const comprobacion_dni = await Usuario.findOne({ DNI });
+        
+        if (comprobacion_dni) {
+            return res.status(400).send({
+                ok: false,
+                error: "Error, este DNI ya existe"
+            });
+        }
+        if(!NAMEAPP){
+            return res.status(400).send({
+                ok: false,
+                error: "Error, TIENE QUE ESCOGER UN NOMBRE DE APLICACION"
+            });
+        }
+        const comprobacion_email = await Usuario.findOne({ EMAIL });
+        if(comprobacion_email){
+            return res.status(400).send({
+                ok: false,
+                error: "Error, EL EMAIL YA EXISTE EN LA APP"
+            });
+        }
+        // Comprobar si el nickname ya existe
+        const comprobacion_nickname = await Usuario.findOne({ NAMEAPP });
+        if (comprobacion_nickname) {
+            const variantes = await obtenerVariantesNickname(NAMEAPP);
+            return res.status(400).send({
+                ok: false,
+                error: "Error, este nickname ya existe",
+                sugerencias: variantes
+            });
+        }
+
+        // Codificar la contraseña
+        const passwordCodificada = await codifyPassword(PASSWORD);
+
+        // Obtener el último número de usuario
+        const detUltimoNum = await obtenerUltimoUsuario();
+
+        // Determinar el título según el sexo
+
+        const titulo1 = titulos[SEXO.toLowerCase()] || 'Sre. ';
+
+        // Determinar la ruta del avatar
+        const avatarPath = req.file ? req.file.path : 'public/uploads/avatar/prede.png';
+
+        // Crear un nuevo usuario
+        const nuevoUsuario = new Usuario({
+            DNI,
+            NOMBRE,
+            NAMEAPP,
+            APELLIDOS,
+            EMAIL: EMAIL.toLowerCase(),
+            PASSWORD: passwordCodificada,
+            DIRECCION,
+            ID_POBLACION,
+            COD_POSTAL,
+            SEXO: SEXO.toLowerCase(),
+            NUM_USUARIO: detUltimoNum,
+            TITULO1: titulo1,
+            AVATAR: avatarPath
+        });
+
+        // Guardar el nuevo usuario en la base de datos
+        const usuarioGuardado = await nuevoUsuario.save();
+        res.status(200).send({
+            ok: true,
+            resultado: usuarioGuardado
+        });
+
     } catch (error) {
         console.error('Error en el registro:', error);
         res.status(500).json({ mensaje: 'Error en el registro' });
@@ -206,20 +253,47 @@ router.get('/:id', validate.protegerRuta(''), async(req, res) => {
 
 //MODIFICAR USUARIO (NAME / EMAIL)
 router.put('/edit-profile/:id', validate.protegerRuta(''), async(req, res) => {
-    const id = req.params.id; // Asegúrate de que estás usando 'id' en lugar de '_id' si ese es el nombre del parámetro en la URL
-    let body = _.pick(req.body, ['NOMBRE', 'APELLIDOS', 'EMAIL', 'DIRECCION', 'ID_POBLACION', 'COD_POSTAL', 'SEXO']);
-
-    // Filtrar propiedades no definidas
-    Object.keys(body).forEach(key => {
-        if (body[key] === undefined) {
-            delete body[key];
-        }
-    });
-
     try {
-        const actualizarTitulo = titulos[req.body.SEXO.toLowerCase()] || 'Sre. ';
-        body.TITULO1 = actualizarTitulo
+        const id = req.params.id;
 
+        // Asegúrate de que el ID proporcionado es válido
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                ok: false,
+                error: 'ID de usuario no válido'
+            });
+        }
+
+        // Selecciona solo los campos permitidos
+        let body = _.pick(req.body, ['NOMBRE', 'APELLIDOS', 'NAMEAPP', 'EMAIL', 'DIRECCION', 'ID_POBLACION', 'COD_POSTAL', 'SEXO']);
+
+        // Filtrar propiedades no definidas
+        Object.keys(body).forEach(key => {
+            if (body[key] === undefined) {
+                delete body[key];
+            }
+        });
+
+        // Verificar si el NAMEAPP ya está en uso por otro usuario
+        if (body.NAMEAPP) {
+            const comprobacion_nickname = await Usuario.findOne({ NAMEAPP: body.NAMEAPP, _id: { $ne: id } });
+            if (comprobacion_nickname) {
+                const variantes = await obtenerVariantesNickname(body.NAMEAPP);
+                return res.status(400).send({
+                    ok: false,
+                    error: "Error, este nickname ya existe",
+                    sugerencias: variantes
+                });
+            }
+        }
+
+        // Actualizar el título según el sexo si se está actualizando
+        if (body.SEXO) {
+            const actualizarTitulo = titulos[body.SEXO.toLowerCase()] || 'Sre. ';
+            body.TITULO1 = actualizarTitulo;
+        }
+
+        // Actualizar el usuario en la base de datos
         const usuarioActualizado = await Usuario.findByIdAndUpdate(id, body, { new: true, runValidators: true }).lean();
 
         if (!usuarioActualizado) {
@@ -234,9 +308,10 @@ router.put('/edit-profile/:id', validate.protegerRuta(''), async(req, res) => {
             usuario: usuarioActualizado
         });
     } catch (err) {
-        res.status(400).json({
+        console.error('Error al actualizar el perfil:', err);
+        res.status(500).json({
             ok: false,
-            error: err
+            error: 'Ocurrió un error al actualizar el perfil'
         });
     }
 });
