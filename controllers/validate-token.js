@@ -36,13 +36,17 @@ let protegerRuta = rolesPermitidos => {
 
 function obtenerUsuarioDesdeToken(token) {
     try {
-        const decoded = jwt.verify(token, TOKEN_SECRET); // 'secreto' es la clave secreta utilizada para firmar el token
-        console.log(decoded.usuario);
-        return decoded.usuario; // Suponiendo que la información del usuario está almacenada en el campo 'usuario' del token
+        const decoded = jwt.verify(token, TOKEN_SECRET); // Verifica y decodifica el token
+
+        console.log(decoded); // Esto te mostrará todo el payload del token
+
+        // Accede al campo correcto. Por ejemplo, si deseas obtener el login:
+        return decoded.login; // O el campo que necesites, por ejemplo, decoded.role
 
     } catch (error) {
+        console.error('Error al decodificar el token:', error);
         return null; // Devuelve null si hay un error al decodificar el token
     }
 }
 
-module.exports = { protegerRuta: protegerRuta };
+module.exports = { protegerRuta: protegerRuta, obtenerUsuarioDesdeToken: obtenerUsuarioDesdeToken };
