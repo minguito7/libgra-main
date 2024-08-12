@@ -252,9 +252,7 @@ router.post('/add-libro', validate.protegerRuta('') ,upload.array('files', 2) , 
             portada: avatarPath
         });
 
-        // Guardar el libro en la base de datos
-        
-      
+        // Guardar el libro en la base de datos     
         const libroGuardado = await newBook.save();
         res.status(200).send({
             ok: true,
@@ -267,32 +265,11 @@ router.post('/add-libro', validate.protegerRuta('') ,upload.array('files', 2) , 
     }
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Ruta para obtener un libro específico
-router.get('/books/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
     const { id } = req.params;
-    try {generos
-        const book = await LibroModel.findById(id);
+    try {
+        const book = await Libro.findById(id);
         if (!book) {
             return res.status(404).send('Libro no encontrado');
         }
