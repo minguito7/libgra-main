@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const validate = require('./validate-token');
 const Libro  = require('../models/libroModel.js'); // Asegúrate de que esta ruta es correcta
+const { PDFDocument, rgb } = require('pdf-lib');
 
 const Usuario = require('../models/userModel.js');
 const { Autor } = require('../models/autorModel.js');
@@ -38,6 +39,119 @@ const storage = multer.diskStorage({
 
 // Crear un middleware de multer con la configuración de almacenamiento
 const upload = multer({ storage: storage });
+
+async function loadPdf(pdfPath) {
+    try {
+      const pdfBuffer = fs.readFileSync(pdfPath);
+      const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
+      //console.log('El archivo PDF es válido.');
+      return pdfDoc;
+    } catch (error) {
+      console.error('Error al cargar el archivo PDF:', error.message);
+      throw error; // Re-lanzar el error después de registrarlo
+    }
+  }
+
+// Función para añadir una marca de agua con un logo a un PDF
+/*async function addImageWatermark(pdfPath, logoPath) {
+    try {
+      const pdfDoc = await loadPdf(pdfPath);
+      //console.log('El archivo PDF es válido.');
+  
+      // Leer el logo para la marca de agua
+      const logoBuffer = fs.readFileSync(logoPath);
+      const logoImage = await pdfDoc.embedPng(logoBuffer); // Usa embedJpg si el logo es JPG
+  
+      // Obtener las páginas del PDF
+      const pages = pdfDoc.getPages();
+      pages.forEach(page => {
+        const { width, height } = page.getSize();
+        page.drawImage(logoImage, {
+          x: width / 4,
+          y: height / 4,
+          width: 200,
+          height: 200,
+          opacity: 0.5
+        });
+      });
+  
+      // Guardar el PDF modificado
+      const modifiedPdfBytes = await pdfDoc.save();
+  
+      // Escribir el PDF modificado a un archivo
+      const modifiedPdfPath = pdfPath.replace('.pdf', '-modified.pdf');
+      fs.writeFileSync(modifiedPdfPath, modifiedPdfBytes);
+  
+      return modifiedPdfPath;
+  
+    } catch (error) {
+      console.error('Error al añadir la marca de agua al PDF:', error.message);
+      throw error;
+    }
+  }*/
+
+// Función para añadir una marca de agua al PDF - addImageWatermark
+// Función para añadir una marca de agua al PDF solo en la segunda página
+async function addImageWatermark(pdfPath, imagePath) {
+    // Leer el archivo PDF
+    const pdfBytes = fs.readFileSync(pdfPath);
+
+    // Intentar cargar el PDF, ignorando la encriptación si es necesario
+    let pdfDoc;
+    try {
+        pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+    } catch (error) {
+        throw new Error(`No se pudo cargar el PDF. Asegúrate de que no esté encriptado o protegido: ${error.message}`);
+    }
+
+    // Obtener todas las páginas del PDF
+    const pages = pdfDoc.getPages();
+
+    // Verificar si hay al menos dos páginas
+    if (pages.length < 2) {
+        throw new Error('El PDF debe tener al menos dos páginas para añadir la imagen y el texto.');
+    }
+
+    // Obtener la segunda página
+    const secondPage = pages[1];
+
+    // Leer y embeder la imagen
+    const imageBytes = fs.readFileSync(imagePath);
+    const image = await pdfDoc.embedPng(imageBytes);
+
+    // Definir el tamaño de la imagen
+    const imgWidth = 50; // Ancho de la imagen
+    const imgHeight = 50; // Alto de la imagen
+
+    // Calcular las coordenadas para la esquina superior izquierda
+    const margin = 10; // Margen desde la esquina superior izquierda
+    const x = margin;
+    const y = secondPage.getHeight() - imgHeight - margin; // Ajusta la coordenada Y para el margen superior
+
+    // Añadir la imagen en la esquina superior izquierda con tamaño definido
+    secondPage.drawImage(image, {
+        x,
+        y,
+        width: imgWidth,
+        height: imgHeight,
+        opacity: 0.5
+    });
+
+    // Añadir texto a continuación de la imagen
+    secondPage.drawText('www.libgra.es', {
+        x: x + imgWidth + margin, // Posiciona el texto a la derecha de la imagen
+        y: y + imgHeight / 2 - 10, // Centrar el texto verticalmente con respecto a la imagen
+        size: 12,
+        color: rgb(0, 0, 0), // Color del texto (negro)
+    });
+
+    // Guardar el PDF modificado
+    const modifiedPdfBytes = await pdfDoc.save();
+    const modifiedPdfPath = pdfPath.replace('.pdf', '_modified.pdf');
+    fs.writeFileSync(modifiedPdfPath, modifiedPdfBytes);
+
+    return modifiedPdfPath;
+}
 
 /*
     INDICE
@@ -173,7 +287,7 @@ router.get('/descargar-libro/:id', validate.protegerRuta(''), async (req, res) =
         // Obtener la ruta del archivo
         const archivoPath = libro.archivo;
 
-        // Comprobar si el archivo existe en el servidor
+        // Comprobar si el archivo existe en awaitel servidor
         if (!archivoPath || !fs.existsSync(archivoPath)) {
             return res.status(404).send({
                 ok: false,
@@ -199,44 +313,51 @@ router.get('/descargar-libro/:id', validate.protegerRuta(''), async (req, res) =
 });
 
 /* Ruta para añadir un libro*/
-router.post('/add-libro', validate.protegerRuta('') ,upload.array('files', 2) , async (req, res) => {
+router.post('/add-libro', validate.protegerRuta(''), upload.array('files', 2), async (req, res) => {
     try {
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;
         let avatarPath;
-        
+
         const imagenesPredeterminadas = [
             'public/uploads/imgLibro/portadaPrede1.png',
             'public/uploads/imgLibro/portadaPrede2.png',
             'public/uploads/imgLibro/portadaPrede3.png'
         ];
-        let indiceAleatorio;
-        let portadaPrede;   
+        let portadaPrede;
+
         req.files.forEach(file => {
             if (file.mimetype.startsWith('image/')) {
                 // Procesar imágenes
                 avatarPath = file.path;
                 console.log("Imagen subida: " + avatarPath);
-                
             } else if (file.mimetype === 'application/pdf') {
                 // Procesar PDFs
-                 archivoPath = file.path; // La ruta del archivo PDF subido
+                archivoPath = file.path; // La ruta del archivo PDF subido
             }
         });
 
-         // Si no se subió ninguna imagen, asignar una portada predeterminada aleatoria
-         if (!avatarPath) {
+        // Esperar a que se procesen todos los archivos
+        await Promise.all(req.files.map(async (file) => {
+            if (file.mimetype === 'application/pdf') {
+                // Añadir la marca de agua a la segunda página del PDF
+                const logoPath = 'public/logos/logoLibGra-Proto1.png'; // Ruta a tu logo para la marca de agua
+                archivoPath = await addImageWatermark(file.path, logoPath);
+            }
+        }));
+
+        // Si no se subió ninguna imagen, asignar una portada predeterminada aleatoria
+        if (!avatarPath) {
             const indiceAleatorio = Math.floor(Math.random() * imagenesPredeterminadas.length);
             avatarPath = imagenesPredeterminadas[indiceAleatorio];
             console.log("Portada predeterminada asignada: " + avatarPath);
         }
-        const token_add = req.header('Authorization').split(' ');
 
+        const token_add = req.header('Authorization').split(' ');
         const usuario = validate.obtenerUsuarioDesdeToken(token_add[1]);
-        //console.log(usu);
-        const find_usuario = await Usuario.find({EMAIL: usuario});
+        const find_usuario = await Usuario.find({ EMAIL: usuario });
         const added_usuario = find_usuario[0]._id;
-        //console.log(added_usuario);
+
         // Crear una nueva instancia del modelo de libro con los datos
         const newBook = new Libro({
             titulo,
@@ -248,12 +369,13 @@ router.post('/add-libro', validate.protegerRuta('') ,upload.array('files', 2) , 
             id_genero,
             descripcion,
             activo,
-            archivo: archivoPath,
+            archivo: archivoPath, // Usa la ruta del PDF modificado
             portada: avatarPath
         });
 
         // Guardar el libro en la base de datos     
         const libroGuardado = await newBook.save();
+
         res.status(200).send({
             ok: true,
             resultado: libroGuardado
@@ -265,8 +387,9 @@ router.post('/add-libro', validate.protegerRuta('') ,upload.array('files', 2) , 
     }
 });
 
+
 // Ruta para obtener un libro específico
-router.get('/:id', async (req, res) => {
+router.get('/:id', validate.protegerRuta(''), async (req, res) => {
     const { id } = req.params;
     try {
         const book = await Libro.findById(id);
