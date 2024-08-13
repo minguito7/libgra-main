@@ -40,6 +40,38 @@ const storage = multer.diskStorage({
 // Crear un middleware de multer con la configuración de almacenamiento
 const upload = multer({ storage: storage });
 
+async function validarPDF(pdfPath) {
+    try {
+        // Leer el archivo PDF
+        const pdfBytes = fs.readFileSync(pdfPath);
+
+        // Intentar cargar el PDF
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+
+        // Verificar si el PDF está encriptado
+        if (pdfDoc.isEncrypted) {
+            throw new Error('El PDF está encriptado. No se puede procesar.');
+        }
+
+        // Verificar que el PDF tenga al menos 2 páginas
+        if (pdfDoc.getPageCount() < 2) {
+            throw new Error('El PDF debe tener al menos dos páginas.');
+        }
+
+        // Verificar que no tenga errores estructurales comunes
+        const pages = pdfDoc.getPages();
+        pages.forEach(page => {
+            if (!page) {
+                throw new Error('El PDF tiene una página corrupta.');
+            }
+        });
+
+        // Si pasa todas las comprobaciones, devolver true
+        return true;
+    } catch (error) {
+        throw new Error(`PDF no válido: ${error.message}`);
+    }
+}
 
 // Función para añadir una marca de agua al PDF - addImageWatermark
 // Función para añadir una marca de agua al PDF solo en la segunda página
@@ -89,7 +121,7 @@ async function addImageWatermark(pdfPath, imagePath) {
     });
 
     // Añadir texto a continuación de la imagen
-    secondPage.drawText('www.libgra.es', {
+    secondPage.drawText('URL PÁGINA WEB', {
         x: x + imgWidth + margin, // Posiciona el texto a la derecha de la imagen
         y: y + imgHeight / 2 - 10, // Centrar el texto verticalmente con respecto a la imagen
         size: 12,
@@ -291,6 +323,7 @@ router.post('/add-libro', validate.protegerRuta(''), upload.array('files', 2), a
         // Esperar a que se procesen todos los archivos
         await Promise.all(req.files.map(async (file) => {
             if (file.mimetype === 'application/pdf') {
+                await validarPDF(file.path);
                 // Añadir la marca de agua a la segunda página del PDF
                 const logoPath = 'public/logos/logoLibGra-Proto1.png'; // Ruta a tu logo para la marca de agua
                 archivoPath = await addImageWatermark(file.path, logoPath);
