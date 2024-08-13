@@ -40,55 +40,6 @@ const storage = multer.diskStorage({
 // Crear un middleware de multer con la configuración de almacenamiento
 const upload = multer({ storage: storage });
 
-async function loadPdf(pdfPath) {
-    try {
-      const pdfBuffer = fs.readFileSync(pdfPath);
-      const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
-      //console.log('El archivo PDF es válido.');
-      return pdfDoc;
-    } catch (error) {
-      console.error('Error al cargar el archivo PDF:', error.message);
-      throw error; // Re-lanzar el error después de registrarlo
-    }
-  }
-
-// Función para añadir una marca de agua con un logo a un PDF
-/*async function addImageWatermark(pdfPath, logoPath) {
-    try {
-      const pdfDoc = await loadPdf(pdfPath);
-      //console.log('El archivo PDF es válido.');
-  
-      // Leer el logo para la marca de agua
-      const logoBuffer = fs.readFileSync(logoPath);
-      const logoImage = await pdfDoc.embedPng(logoBuffer); // Usa embedJpg si el logo es JPG
-  
-      // Obtener las páginas del PDF
-      const pages = pdfDoc.getPages();
-      pages.forEach(page => {
-        const { width, height } = page.getSize();
-        page.drawImage(logoImage, {
-          x: width / 4,
-          y: height / 4,
-          width: 200,
-          height: 200,
-          opacity: 0.5
-        });
-      });
-  
-      // Guardar el PDF modificado
-      const modifiedPdfBytes = await pdfDoc.save();
-  
-      // Escribir el PDF modificado a un archivo
-      const modifiedPdfPath = pdfPath.replace('.pdf', '-modified.pdf');
-      fs.writeFileSync(modifiedPdfPath, modifiedPdfBytes);
-  
-      return modifiedPdfPath;
-  
-    } catch (error) {
-      console.error('Error al añadir la marca de agua al PDF:', error.message);
-      throw error;
-    }
-  }*/
 
 // Función para añadir una marca de agua al PDF - addImageWatermark
 // Función para añadir una marca de agua al PDF solo en la segunda página
