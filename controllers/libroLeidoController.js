@@ -11,16 +11,20 @@ router.get('/', validate.protegerRuta(''),  async (req, res) => {
     const librosLeidos = await LibroLeidoModel.find({}).populate({
       path: 'id_libro',
       populate: [
-        { path: 'generos_autor' },  // Poblar generos dentro de Autor
-        { path: 'libros_autor' }    // Poblar libros dentro de Autor
+        { path: 'added_usuario' },  
+        { path: 'categorias_libro' },
+        { path: 'generos_libro' },
+        { path: 'resenas_libro' },
+        { path: 'added_usuario' },
       ]
-    });
-    console.log('Aqui---------- ' + librosLeidos);
+    })
+    .populate('id_usuario')
+    
     if (!librosLeidos.length) {
       return res.status(404).json({ error: 'No se encontraron libros leídos' });
     }
 
-    if (libros.length > 0) {
+    if (librosLeidos.length > 0) {
           res.status(200).send({ ok: true, resultado: librosLeidos});
     } else {
           res.status(404).send({ ok: false, error: "No se encontraron libros" });

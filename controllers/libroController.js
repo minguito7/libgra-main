@@ -549,7 +549,7 @@ router.delete('/delete/:id', validate.protegerRuta('editor'), async (req, res) =
         
         const libro = await Libro.findById(req.params.id).exec();
 
-        if(user.id == libro.usuario_editor || user.ROLE == 'admin' || user.ROLE == 'soid'){
+        if(user.id == libro.added_usuario || user.ROLE == 'admin' || user.ROLE == 'soid'){
             // Intentar actualizar el libro y establecer el campo 'activo' a false
             const updatedBook = await Libro.findByIdAndUpdate(
                 id,
