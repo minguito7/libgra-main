@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+// Define los roles permitidos como un array
+const rolesPermitidos = ['lector', 'editor', 'admin', 'soid'];
+
 const userSchema = new mongoose.Schema({
     DNI: { type: String, unique: true, required: true },
     NOMBRE: { type: String, lowercase: true },
@@ -14,7 +17,7 @@ const userSchema = new mongoose.Schema({
     COD_POSTAL: { type: String },
     TITULO1: { type: String },
     SEXO: { type: String, lowercase: true },
-    ROLE: { type: String, default: 'lector' },
+    ROLE: { type: String,  enum: rolesPermitidos,  default: 'lector' },
     ACTIVO: { type: Boolean, default: 1 },
     NUM_USUARIO: { type: Number, unique: true },
     AVATAR: { type: String },
