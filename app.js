@@ -5,6 +5,8 @@ const cors = require('cors');
 const auth = require('./controllers/authController.js');
 const usuario = require('./controllers/userController.js');
 const libros = require('./controllers/libroController.js');
+const librosLeidos = require('./controllers/libroLeidoController.js');
+
 const methodOverride = require('method-override');
 
 const app = express();
@@ -50,6 +52,7 @@ app.get('/', auth);
 app.use('/auth', auth);
 app.use('/usuarios', usuario);
 app.use('/libros', libros);
+app.use('/libros-leidos', librosLeidos);
 
 
 // Escuchar en el puerto especificado

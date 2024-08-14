@@ -1,105 +1,88 @@
+const express = require('express');
+const router = express.Router();
 const LibroLeidoModel = require('../models/librosLeidosModel.js');
+const validate = require('./validate-token');
 
-exports.addReadBook = async (req, res) => {
-  const { id_usuario, id_libro } = req.body;
-
+//DEVOLVER LIBROS LEIDOS
+router.get('/', validate.protegerRuta(''),  async (req, res) => {
   try {
-    const newReadBook = new LibroLeidoModel({
+
+    // Busca todos los registros de libros leídos por el usuario
+    const librosLeidos = await LibroLeidoModel.find({}).populate({
+      path: 'id_libro',
+      populate: [
+        { path: 'generos_autor' },  // Poblar generos dentro de Autor
+        { path: 'libros_autor' }    // Poblar libros dentro de Autor
+      ]
+    });
+    console.log('Aqui---------- ' + librosLeidos);
+    if (!librosLeidos.length) {
+      return res.status(404).json({ error: 'No se encontraron libros leídos' });
+    }
+
+    if (libros.length > 0) {
+          res.status(200).send({ ok: true, resultado: librosLeidos});
+    } else {
+          res.status(404).send({ ok: false, error: "No se encontraron libros" });
+    }
+
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los libros leídos' });
+  }    
+})
+
+
+//DEVOLVER LIBRO LEIDO
+router.get('/:id', validate.protegerRuta(''),  async (req, res) => {
+  try {
+    const { id } = req.params; // Obtén el ID del libro de los parámetros de la ruta
+    const id_usuario = req.user.id; // Obtén el ID del usuario del middleware de autenticación
+
+    // Busca el registro del libro leído por el usuario
+    const libroLeido = await LibroLeidoModel.findById({ id_libro: req.params.id });
+
+    if (!libroLeido) {
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+    if (libros.length > 0) {
+      res.send({ ok: true, resultado: librosLeidos});
+    } else {
+          res.status(404).send({ ok: false, error: "No se encontraron libros" });
+    }
+
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los datos de lectura' });
+  }
+})
+
+//LEER UN LIBRO
+router.post('/add-libro-leido', validate.protegerRuta(''),  async (req, res) => {
+  try {
+    const { id_usuario, id_libro, pagina_actual } = req.body; // Datos enviados en el cuerpo de la solicitud
+    //const id_usuario = req.user.id; // Obtén el ID del usuario del middleware de autenticación
+    const pagina =  Number(pagina_actual)
+    
+    // Valida que la página actual sea un número válido
+    if (isNaN(pagina) || pagina < 0) {
+      return res.status(400).json({ error: 'La página actual debe ser un número válido' });
+    }
+
+    // Crea un nuevo registro para el libro leído
+    const nuevoLibroLeido = new LibroLeidoModel({
       id_usuario,
-      id_libro
+      id_libro,
+      pagina_actual
     });
 
-    await newReadBook.save();
-    res.status(201).send('Libro leído añadido con éxito');
+    // Guarda el nuevo libro leído
+    await nuevoLibroLeido.save();
+
+    res.status(201).json({ message: 'Libro leído añadido correctamente', nuevoLibroLeido });
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Hubo un error al añadir el libro leído');
+    res.status(500).json({ error: 'Error al añadir el libro leído' });
   }
-};
+})
 
-exports.deleteReadBook = async (req, res) => {
-    const { id } = req.params;
-  
-    try {
-      const deletedReadBook = await LibroLeidoModel.findByIdAndDelete(id);
-      if (!deletedReadBook) {
-        return res.status(404).send('Libro leído no encontrado');
-      }
-      res.status(200).send('Libro leído eliminado correctamente');
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Hubo un error al eliminar el libro leído');
-    }
-  };
+// DELETE - PUT - ADD
 
-  exports.getReadBook = async (req, res) => {
-    const { id } = req.params;
-  
-    try {
-      const readBook = await LibroLeidoModel.findById(id);
-      if (!readBook) {
-        return res.status(404).send('Libro leído no encontrado');
-      }
-      res.status(200).json(readBook);
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Hubo un error al buscar el libro leído');
-    }
-  };
-
-  exports.getAllReadBooks = async (req, res) => {
-    try {
-      const readBooks = await LibroLeidoModel.find();
-      res.status(200).json(readBooks);
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Hubo un error al obtener los libros leídos');
-    }
-  };
-//Ver todos los usuarios que han leído un libro
-  exports.getUsersWhoReadBook = async (req, res) => {
-    const { id_libro } = req.params;
-  
-    try {
-      const users = await LibroLeidoModel.find({ id_libro }).populate('id_usuario');
-      if (!users) {
-        return res.status(404).send('No se encontraron usuarios que hayan leído este libro');
-      }
-      res.status(200).json(users.map(user => user.id_usuario));
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Hubo un error al obtener los usuarios que han leído el libro');
-    }
-  };
-
-//Ver todos los LIBROS que ha leído un USUARIO
-  exports.getBooksReadByUser = async (req, res) => {
-    const { id_usuario } = req.params;
-  
-    try {
-      const books = await LibroLeidoModel.find({ id_usuario }).populate('id_libro');
-      if (!books) {
-        return res.status(404).send('No se encontraron libros leídos por este usuario');
-      }
-      res.status(200).json(books.map(book => book.id_libro));
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Hubo un error al obtener los libros leídos por el usuario');
-    }
-  };
-
-  //Ver todos los LIBROS que ha leído un USUARIO
-  exports.getBooksReadByUser = async (req, res) => {
-    const { id_usuario } = req.params;
-  
-    try {
-      const books = await LibroLeidoModel.find({ id_usuario }).populate('id_libro');
-      if (!books) {
-        return res.status(404).send('No se encontraron libros leídos por este usuario');
-      }
-      res.status(200).json(books.map(book => book.id_libro));
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Hubo un error al obtener los libros leídos por el usuario');
-    }
-  };
+module.exports = router;
