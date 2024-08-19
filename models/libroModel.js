@@ -12,8 +12,7 @@ const libroSchema = new mongoose.Schema({
     archivo: { type: String }, // Aquí puedes guardar el nombre del archivo o la ruta al archivo si lo almacenas en el servidor
     portada: { type: String },
     resenas_libro: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Resena'}],
-    usuario_editor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true}],
-
+    
 });
 
 

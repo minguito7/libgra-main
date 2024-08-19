@@ -4,7 +4,9 @@ const libroLeidoSchema = new mongoose.Schema({
     id_usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
     id_libro: { type: mongoose.Schema.Types.ObjectId, ref: 'Libro', required: true },
     fecha_lectura: { type: Date, default: Date.now },
-    pagina_actual: { type: Number, default: 0 } // Nuevo campo para la página actual
+    pagina_actual: { type: Number, default: 0 }, // Nuevo campo para la página actual
+    completado: { type: Boolean, default: false } 
+    
 });
 
 // Plugin para autoincrementar el ID
