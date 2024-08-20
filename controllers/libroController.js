@@ -296,7 +296,7 @@ router.get('/activos', async (req, res) => {
 });
 
 // Ruta para obtener todos los libros - NO ACTIVOS
-router.get('/activos', async (req, res) => {
+router.get('/no-activos', validate.protegerRuta('soid'), async (req, res) => {
     try {
       const libros = await Libro.find({activo: false})
           .populate({
@@ -370,7 +370,7 @@ router.get('/descargar-libro/:id', validate.protegerRuta(''), async (req, res) =
 });
 
 /* Ruta para añadir un libro*/
-router.post('/add-libro', validate.protegerRuta(''), upload.array('files', 2), async (req, res) => {
+router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {
     try {
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;
@@ -462,7 +462,7 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
 });
 
 // Ruta para actualizar un libro
-router.put('/edit-libro/:id', validate.protegerRuta(''), upload.array('files', 2), async (req, res) => {
+router.put('/edit-libro/:id', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {
     try {
         const libroId = req.params.id;
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
@@ -480,6 +480,17 @@ router.put('/edit-libro/:id', validate.protegerRuta(''), upload.array('files', 2
         if (!libroExistente) {
             return res.status(404).send('Libro no encontrado');
         }
+        const usuToken = await obtenerUsuario(req);
+        user = await Usuario.findOne({ EMAIL: usuToken.login });
+        // Si no se encuentra por email, intenta buscar por nameapp (si se dispone del valor)
+        if (!user && usuToken.nameapp) {
+            user = await Usuario.findOne({ NAMEAPP: usuToken.nameapp });
+        }    
+
+        if(user.id != libroExistente.added_usuario || user.ROLE != 'admin' || user.ROLE != 'soid'){
+            return res.status(404).send('NO eres el usuario que ha añadido el libro, ni tienes privilegios para hacerlo');
+        }
+    
 
         req.files.forEach(file => {
             if (file.mimetype.startsWith('image/')) {

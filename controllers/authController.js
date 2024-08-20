@@ -202,7 +202,7 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
         // Determinar el título según el sexo
 
         const titulo1 = titulos[SEXO.toLowerCase()] || 'Sre. ';
-
+        
         // Determinar la ruta del avatar
         const avatarPath = req.file ? req.file.path : 'public/uploads/avatar/prede.png';
 

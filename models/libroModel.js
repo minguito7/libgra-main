@@ -6,13 +6,13 @@ const libroSchema = new mongoose.Schema({
     categorias_libro: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true }],
     isbn: { type: String, required: true, unique: true },
     fecha_publicacion: { type: Date, required: true },
+    createdAt: { type: Date, default: Date.now },
     generos_libro: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Genero', required: true }],
     descripcion: { type: String },
     activo: { type: Boolean, default: true },
     archivo: { type: String }, // Aquí puedes guardar el nombre del archivo o la ruta al archivo si lo almacenas en el servidor
     portada: { type: String },
     resenas_libro: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Resena'}],
-    
 });
 
 
