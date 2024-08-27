@@ -12,8 +12,13 @@ const poblacion = require('./controllers/poblacionController.js');
 const methodOverride = require('method-override');
 const cors = require('cors');
 const app = express();
+// función middleware para servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:4200', // Cambia esto al dominio de tu frontend
+    optionsSuccessStatus: 200
+}));
 // Configuración de la URL base desde las variables de entorno
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
@@ -55,9 +60,6 @@ app.use(methodOverride(function(req, res) {
 
 // Definir el puerto en el que escuchará la aplicación
 const PORT = process.env.PORT || 3000; // Utiliza el puerto proporcionado por el entorno o 3000 si no se proporciona ninguno
-
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
-
 app.get('/', libros);
 app.use('/auth', auth);
 app.use('/usuarios', usuario);

@@ -20,7 +20,7 @@ const titulos = {
 const validateController = require  ('./validate-token.js');
 
 const directorioPadre = path.join(__dirname, '..');
-let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
+let guardarImagen = path.join('/public/uploads/avatar/');
 
 
 
