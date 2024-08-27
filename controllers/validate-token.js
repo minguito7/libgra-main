@@ -34,6 +34,7 @@ let protegerRuta = rolesPermitidos => {
     };
 };
 
+
 function obtenerUsuarioDesdeToken(token) {
     try {
         const decoded = jwt.verify(token, TOKEN_SECRET); // Verifica y decodifica el token
@@ -49,4 +50,6 @@ function obtenerUsuarioDesdeToken(token) {
     }
 }
 
-module.exports = { protegerRuta: protegerRuta, obtenerUsuarioDesdeToken: obtenerUsuarioDesdeToken };
+
+
+module.exports = { protegerRuta: protegerRuta, obtenerUsuarioDesdeToken: obtenerUsuarioDesdeToken};

@@ -1,78 +1,48 @@
 const PoblacionModel = require('../models/poblacionModel');
 
-// Controlador para añadir una nueva población
-exports.addPoblacion = async (req, res) => {
+const express = require('express');
+let router = express.Router();
+
+router.post('/add-poblacion', async (req, res) => {
     try {
         const { nombre } = req.body;
+        console.log(nombre);
+        // Verificar que el nombre está presente
+        if (!nombre) {
+            return res.status(400).json({ mensaje: 'El nombre es obligatorio' });
+        }
 
-        // Crear una nueva instancia de población
-        const nuevaPoblacion = new PoblacionModel({ nombre });
+        // Crear una nueva instancia del modelo
+        const nuevaPoblacion = new PoblacionModel({nombre});
 
         // Guardar la nueva población en la base de datos
         await nuevaPoblacion.save();
 
-        res.status(201).json({ mensaje: 'Población creada correctamente' });
+        // Enviar una respuesta exitosa
+        res.status(201).json({
+            mensaje: 'Población creada exitosamente',
+            poblacion: nuevaPoblacion
+        });
     } catch (error) {
-        console.error('Error al añadir población:', error);
-        res.status(500).json({ mensaje: 'Error al añadir población' });
+        console.error('Error al crear población:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor' });
     }
-};
+});
 
-// Controlador para borrar una población por ID
-exports.deletePoblacionById = async (req, res) => {
+router.get('/', async (req, res) => {
     try {
-        const { id } = req.params;
+      const poblacion = await PoblacionModel.find().exec(); // Ejecutar la consulta         
+      if (poblacion.length > 0) {
+          res.send({ ok: true, resultado: poblacion});
+      } else {
+          res.status(404).send({ ok: false, error: "No se encontraron libros" });
+      }
+  } catch (err) {
+      res.status(500).send({
+          ok: false,
+          error: err.message
+      });
+  }
+});
 
-        // Buscar la población por ID y borrarla
-        await PoblacionModel.findByIdAndDelete(id);
-
-        res.status(200).json({ mensaje: 'Población eliminada correctamente' });
-    } catch (error) {
-        console.error('Error al borrar población:', error);
-        res.status(500).json({ mensaje: 'Error al borrar población' });
-    }
-};
-
-// Controlador para editar una población por ID
-exports.editPoblacionById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { nombre } = req.body;
-
-        // Buscar la población por ID y actualizarla
-        await PoblacionModel.findByIdAndUpdate(id, { nombre });
-
-        res.status(200).json({ mensaje: 'Población actualizada correctamente' });
-    } catch (error) {
-        console.error('Error al editar población:', error);
-        res.status(500).json({ mensaje: 'Error al editar población' });
-    }
-};
-
-// Controlador para ver una población por ID
-exports.getPoblacionById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // Buscar la población por ID
-        const poblacion = await PoblacionModel.findById(id);
-
-        res.status(200).json(poblacion);
-    } catch (error) {
-        console.error('Error al obtener población por ID:', error);
-        res.status(500).json({ mensaje: 'Error al obtener población por ID' });
-    }
-};
-
-// Controlador para ver todas las poblaciones
-exports.getAllPoblaciones = async (req, res) => {
-    try {
-        // Obtener todas las poblaciones
-        const poblaciones = await PoblacionModel.find();
-
-        res.status(200).json(poblaciones);
-    } catch (error) {
-        console.error('Error al obtener todas las poblaciones:', error);
-        res.status(500).json({ mensaje: 'Error al obtener todas las poblaciones' });
-    }
-};
+module.exports = router;

@@ -17,6 +17,7 @@ const titulos = {
     'mujer': 'Sra. ',
     'otro': 'Sre. '
 };
+const validateController = require  ('./validate-token.js');
 
 const directorioPadre = path.join(__dirname, '..');
 let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
@@ -53,7 +54,7 @@ async function obtenerVariantesNickname(nickName) {
         }
 
         suffix++;
-    }
+    }avatarPath
 
     return variantes;
 }
@@ -135,6 +136,9 @@ function calcularLetraDNI(dniNumeros) {
 
 router.post('/registro', upload.single('myFile'), async (req, res) => {
     try {
+        console.log('Request Body:', req.body);
+console.log('Uploaded File:', req.file);
+
         const { DNI, NAMEAPP, PASSWORD, NOMBRE, APELLIDOS, EMAIL, DIRECCION, ID_POBLACION, COD_POSTAL, SEXO } = req.body;
 
         if(!DNI){
@@ -222,7 +226,7 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
             TITULO1: titulo1,
             AVATAR: avatarPath
         });
-
+        console.log(ID_POBLACION)
         // Guardar el nuevo usuario en la base de datos
         const usuarioGuardado = await nuevoUsuario.save();
         res.status(200).send({
@@ -235,7 +239,6 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
         res.status(500).json({ mensaje: 'Error en el registro' });
     }
 });
-
 /*  LOGIN* 
 router.post('/login', async(req, res) => {
     
@@ -285,100 +288,29 @@ router.post('/login', async (req, res) => {
     }
 });
 
-module.exports = router;
-/* 
-
-     try {
-        const passwordCod = await codifyPassword(req.body.PASSWORD);
-        const fotoPrede = 'public/uploads/avatar/prede.png';
-        const detUltimoNum = await obtenerUltimoUsuario();
-
-        console.log(req.body.AVATAR);
-        if (req.body.AVATAR == '' | req.body.AVATAR == undefined) {
-            // Si no se envía ninguna imagen, asigna una imagen predeterminada
-            const nuevoUsuario = new Usuario({
-                DNI: req.body.DNI,
-                NOMBRE: req.body.NOMBRE,
-                APELLIDOS: req.body.APELLIDOS,
-                EMAIL: req.body.EMAIL.toLowerCase(),
-                PASSWORD: passwordCod,
-                DIRECCION: req.body.DIRECCION,
-                ID_POBLACION: req.body.ID_POBLACION,
-                COD_POSTAL: req.body.COD_POSTAL,
-                SEXO: req.body.SEXO.toLowerCase(),
-                NUM_USUARIO: detUltimoNum,
-                AVATAR: fotoPrede // Ruta a la imagen predeterminada
-            });
-
-            if (req.body.SEXO.toLowerCase() === 'hombre') {
-                titulo1 = 'Sr. ';
-            } else if (req.body.SEXO.toLowerCase() === 'mujer') {
-                titulo1 = 'Sra. ';
-            } else {
-                titulo1 = 'Sre. ';
-            }
-            nuevoUsuario.TITULO1 = titulo1;
-
-            nuevoUsuario.save().then(x => {
-                res.status(200).send({
-                    ok: true,
-                    resultado: x
-                });
-            }).catch(err => {
-                res.status(400).send({
-                    ok: false,
-                    error: "Error guardando el usuario" + err
-                });
-            });
-        } else {
-
-            let avatar = req.body.AVATAR;
-            let base64Image = avatar.split(';base64,').pop();
-            //TODO
-            //CONSEGUIR EL TIPO DE LA IMAGEN Y AÑADIRSELO (.PNG/.JPG)
-            let rutaImagen = 'avatar' + req.body.NOMBRE + Date.now() + '.png';
-
-            const nuevoUsuario = new Usuario({
-                DNI: req.body.DNI,
-                NOMBRE: req.body.NOMBRE,
-                APELLIDOS: req.body.APELLIDOS,
-                EMAIL: req.body.EMAIL,
-                PASSWORD: passwordCod,
-                DIRECCION: req.body.DIRECCION,
-                ID_POBLACION: req.body.ID_POBLACION,
-                COD_POSTAL: req.body.COD_POSTAL,
-                SEXO: req.body.SEXO,
-                NUM_USUARIO: detUltimoNum,
-            });
-
-            if (req.body.SEXO === 'hombre') {
-                titulo1 = 'Sr. ';
-            } else if (req.body.SEXO === 'mujer') {
-                titulo1 = 'Sra. ';
-            } else {
-                titulo1 = 'Sre. ';
-            }
-            nuevoUsuario.TITULO1 = titulo1;
-            fs.writeFile('public/uploads/avatar/' + rutaImagen + base64Image, { encoding: 'base64' }, (error) => {
-                nuevoUsuario.AVATAR = 'public/uploads/avatar/' + rutaImage;
-                nuevoUsuario.then(x => {
-
-                    res.status(200).send({
-                        ok: true,
-                        resultado: x
-                    })
-                }).catch(err => {
-                    res.status(400).send({
-                        ok: false,
-                        error: "Error guardando la foto del el usuario" + err
-                    });
-                });
-
-            });
-
-        }
-    } catch (error) {
-        console.error('Error en el registro:', error);
-        res.status(500).json({ mensaje: 'Error en el registro' });
+// Ruta para validar el token
+router.get('/validate-token', (req, res) => {
+    // Obtener el token del encabezado Authorization
+    const authHeader = req.headers['authorization'];
+    
+    if (!authHeader) {
+      return res.status(401).json({ valid: false, message: 'Token no proporcionado' });
     }
-}) */
+  
+    // Extraer el token (quitar 'Bearer ' del encabezado)
+    const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+    
+    // Verificar y decodificar el token
+    jwt.verify(token, TOKEN_SECRET, async (err, decoded) => {
+      if (err) {
+        // Token inválido o expirado
+        return res.status(401).json({ valid: false, message: 'Token inválido' });
+      }
+      const usuarioLogged = await Usuario.findOne({EMAIL: decoded.login});
+      // Token válido
+      console.log(usuarioLogged);
+      res.json({ valid: true, usuarioLogged });
+    });
+  });
+
+module.exports = router;

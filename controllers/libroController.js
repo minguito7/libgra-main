@@ -19,6 +19,9 @@ let guardarImagen = path.join(directorioPadre, '/public/uploads/imgLibros/');
 let guardarPDFOriginales = path.join(directorioPadre, '/public/uploads/pdfLibrosOriginales');
 let guardarPDF = path.join(directorioPadre, '/public/uploads/pdfLibros');
 
+// Configuración de la URL base desde las variables de entorno
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
 async function obtenerUsuario(req) {
     const authHeader = req.header('Authorization');
     if (!authHeader) {
@@ -377,9 +380,9 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         let avatarPath;
 
         const imagenesPredeterminadas = [
-            'public/uploads/imgLibro/portadaPrede1.png',
-            'public/uploads/imgLibro/portadaPrede2.png',
-            'public/uploads/imgLibro/portadaPrede3.png'
+            `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede1.png',
+            `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede2.png',
+            `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede3.png'
         ];
         let portadaPrede;
 
@@ -463,8 +466,7 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
 
 // Ruta para actualizar un libro
 router.put('/edit-libro/:id', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {
-    try {
-        const libroId = req.params.id;
+    try {home
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;
         let avatarPath;
