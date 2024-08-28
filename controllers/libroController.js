@@ -221,7 +221,34 @@ GET ARCHIVO PDF - 159
 
 
 */
+router.get('/novedades-libros', async (req, res) => {
+    try {
+      const libros = await Libro.find()
+          .populate({
+            path: 'id_autor',
+            populate: [
+              { path: 'generos_autor' },  // Poblar generos dentro de Autor
+              { path: 'libros_autor' }    // Poblar libros dentro de Autor
+            ]
+          }) 
+          .populate('categorias_libro') // Poblar datos de la categoría
+          .populate('generos_libro')// Poblar datos del género
+          .populate('resenas_libro') 
+          .populate('added_usuario')
+          .exec(); // Ejecutar la consulta
 
+      if (libros.length > 0) {
+          res.send({ ok: true, resultado: libros});
+      } else {
+          res.status(404).send({ ok: false, error: "No se encontraron libros" });
+      }
+  } catch (err) {
+      res.status(500).send({
+          ok: false,
+          error: err.message
+      });
+  }
+});
 
 // Ruta para obtener todos los libros - ACTIVOS
 router.get('/', async (req, res) => {
@@ -376,7 +403,40 @@ router.get('/descargar-libro/:id', validate.protegerRuta(''), async (req, res) =
 router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {
     try {
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
-        let archivoPath;
+        let archivoPath;// Ruta para obtener los últimos 5 libros añadidos
+
+        router.get('/libros-novedades', async (req, res) => {
+            try {
+                // Encuentra los últimos 5 libros añadidos, ordenados por fecha de publicación
+                const libros = await Libro.find()
+                  .sort({ fecha_publicacion: -1 }) // Ordenar por fecha_publicacion descendente
+                  .limit(5) // Limitar los resultados a 5
+                  .populate({
+                    path: 'id_autor',
+                    populate: [
+                      { path: 'generos_autor' },  // Poblar generos dentro de Autor
+                      { path: 'libros_autor' }    // Poblar libros dentro de Autor
+                    ]
+                  }) 
+                  .populate('categorias_libro') // Poblar datos de la categoría
+                  .populate('generos_libro') // Poblar datos del género
+                  .populate('resenas_libro') 
+                  .populate('added_usuario')
+                  .exec(); // Ejecutar la consulta
+                  console.log("AQUIIIIIII LIBROS: "+libros);
+                // Si no hay libros encontrados
+                if (!libros.length) {
+                    return res.status(404).send('No se encontraron libros');
+                }
+        
+                // Responde con los libros encontrados
+                res.status(200).json(libros);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send('Hubo un error al buscar los libros');
+            }
+        });
+        
         let avatarPath;
 
         const imagenesPredeterminadas = [
@@ -444,7 +504,7 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
 
     } catch (error) {
         console.error(error);
-        res.status(500).send('Hubo un error al guardar el libro');
+        res.status(500).sendfind('Hubo un error al guardar el libro');
     }
 });
 
@@ -463,6 +523,12 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
         res.status(500).send('Hubo un error al buscar el libro');
     }
 });
+
+// Ruta para obtener los últimos 5 libros añadidos
+
+
+
+
 
 // Ruta para actualizar un libro
 router.put('/edit-libro/:id', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {

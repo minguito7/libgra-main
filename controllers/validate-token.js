@@ -39,7 +39,7 @@ function obtenerUsuarioDesdeToken(token) {
     try {
         const decoded = jwt.verify(token, TOKEN_SECRET); // Verifica y decodifica el token
 
-        console.log(decoded); // Esto te mostrará todo el payload del token
+        //console.log(decoded); // Esto te mostrará todo el payload del token
 
         // Accede al campo correcto. Por ejemplo, si deseas obtener el login:
         return decoded.login; // O el campo que necesites, por ejemplo, decoded.role
