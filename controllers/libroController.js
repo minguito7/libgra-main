@@ -223,7 +223,8 @@ GET ARCHIVO PDF - 159
 */
 router.get('/novedades-libros', async (req, res) => {
     try {
-      const libros = await Libro.find()
+      const libros = await Libro.find().sort({ createdAt: -1 }) // Ordenar por fecha de creación en orden descendente
+          .limit(5) // Limitar los resultados a los últimos 5 libros    
           .populate({
             path: 'id_autor',
             populate: [

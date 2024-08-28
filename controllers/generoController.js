@@ -1,78 +1,48 @@
-const GeneroModel = require('../models/generoModel.js');
+const Genero = require('../models/generoModel');
 
-// Controlador para añadir un nuevo género
-exports.addGenero = async (req, res) => {
+const express = require('express');
+let router = express.Router();
+
+router.post('/add-genero', async (req, res) => {
     try {
         const { nombre } = req.body;
+        console.log(nombre);
+        // Verificar que el nombre está presente
+        if (!nombre) {
+            return res.status(400).json({ mensaje: 'El nombre es obligatorio' });
+        }
 
-        // Crear una nueva instancia de género
-        const nuevoGenero = new GeneroModel({ nombre });
+        // Crear una nueva instancia del modelo
+        const nuevaGenero = new Genero({nombre});
 
-        // Guardar el nuevo género en la base de datos
-        await nuevoGenero.save();
+        // Guardar la nueva población en la base de datos
+        await nuevaGenero.save();
 
-        res.status(201).json({ mensaje: 'Género creado correctamente' });
+        // Enviar una respuesta exitosa
+        res.status(201).json({
+            mensaje: 'Genero creada exitosamente',
+            poblacion: nuevaGenero
+        });
     } catch (error) {
-        console.error('Error al añadir género:', error);
-        res.status(500).json({ mensaje: 'Error al añadir género' });
+        console.error('Error al crear genero:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor' });
     }
-};
+});
 
-// Controlador para borrar un género por ID
-exports.deleteGeneroById = async (req, res) => {
+router.get('/', async (req, res) => {
     try {
-        const { id } = req.params;
+      const genero = await Genero.find().exec(); // Ejecutar la consulta         
+      if (genero.length > 0) {
+          res.send({ ok: true, resultado: genero});
+      } else {
+          res.status(404).send({ ok: false, error: "No se encontraron generos" });
+      }
+  } catch (err) {
+      res.status(500).send({
+          ok: false,
+          error: err.message
+      });
+  }
+});
 
-        // Buscar el género por ID y borrarlo
-        await GeneroModel.findByIdAndDelete(id);
-
-        res.status(200).json({ mensaje: 'Género eliminado correctamente' });
-    } catch (error) {
-        console.error('Error al borrar género:', error);
-        res.status(500).json({ mensaje: 'Error al borrar género' });
-    }
-};
-
-// Controlador para editar un género por ID
-exports.editGeneroById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { nombre } = req.body;
-
-        // Buscar el género por ID y actualizarlo
-        await GeneroModel.findByIdAndUpdate(id, { nombre });
-
-        res.status(200).json({ mensaje: 'Género actualizado correctamente' });
-    } catch (error) {
-        console.error('Error al editar género:', error);
-        res.status(500).json({ mensaje: 'Error al editar género' });
-    }
-};
-
-// Controlador para ver un género por ID
-exports.getGeneroById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // Buscar el género por ID
-        const genero = await GeneroModel.findById(id);
-
-        res.status(200).json(genero);
-    } catch (error) {
-        console.error('Error al obtener género por ID:', error);
-        res.status(500).json({ mensaje: 'Error al obtener género por ID' });
-    }
-};
-
-// Controlador para ver todos los géneros
-exports.getAllGeneros = async (req, res) => {
-    try {
-        // Obtener todos los géneros
-        const generos = await GeneroModel.find();
-
-        res.status(200).json(generos);
-    } catch (error) {
-        console.error('Error al obtener todos los géneros:', error);
-        res.status(500).json({ mensaje: 'Error al obtener todos los géneros' });
-    }
-};
+module.exports = router;
