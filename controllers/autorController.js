@@ -40,8 +40,8 @@ router.post('/add-autor', async (req, res) => {
 // GET - Obtener todos los autores
 router.get('/', async (req, res) => {
     try {
-        const autores = await Autor.find().populate('generos_autor libros_autor').exec(); // Ejecutar la consulta
-
+        const autores = await Autor.find().populate('libros_autor').populate('generos_autor').exec(); // Ejecutar la consulta
+        
         if (autores.length > 0) {
             res.send({ ok: true, resultado: autores });
         } else {

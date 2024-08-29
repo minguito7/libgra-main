@@ -10,14 +10,14 @@ const { PDFDocument, rgb } = require('pdf-lib');
 
 const TOKEN_SECRET = 'secreto';
 const Usuario = require('../models/userModel.js');
-const { Autor } = require('../models/autorModel.js');
-const { Categoria } = require('../models/categoriaModel.js');
-const { Genero } = require('../models/generoModel.js');
-const { Resena } = require('../models/resenaModel.js');
+const Autor = require('../models/autorModel.js');
+const Categoria = require('../models/categoriaModel.js');
+const Genero  = require('../models/generoModel.js');
+const Resena  = require('../models/resenaModel.js');
 const directorioPadre = path.join(__dirname, '..');
-let guardarImagen = path.join(directorioPadre, '/public/uploads/imgLibros/');
-let guardarPDFOriginales = path.join(directorioPadre, '/public/uploads/pdfLibrosOriginales');
-let guardarPDF = path.join(directorioPadre, '/public/uploads/pdfLibros');
+let guardarImagen = path.join('/public/uploads/imgLibros/');
+let guardarPDFOriginales = path.join('/public/uploads/pdfLibrosOriginales');
+let guardarPDF = path.join('/public/uploads/pdfLibros');
 
 // Configuración de la URL base desde las variables de entorno
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
@@ -446,12 +446,13 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         const find_usuario = await Usuario.find({ EMAIL: usuario });
         const added_usuario = find_usuario[0]._id;
 
+        const autorr = await Autor.findById({_id: id_autor});
+
           // Buscar el autor
-          /*const autorr = await Autor.find({_id: id_autor});
           if (!autorr) {
               return res.status(404).json({ mensaje: 'Autor no encontrado' });
-          }*/
- 
+          }
+          
         // Crear una nueva instancia del modelo de libro con los datos
         const newBook = new Libro({
             titulo,
@@ -471,10 +472,11 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         const libroGuardado = await newBook.save();
 
         // Añadir el nuevo libro al array libros_autor del autor
-        /*if (!autorr.libros_autor.includes(libroGuardado._id)) {
-            autorr.libros_autor.push(libroGuardado._id);
-            await autorr.save();
-        }*/
+        
+        autorr.libros_autor.push(libroGuardado._id);
+        await autorr.save();
+        
+        
 
         res.status(200).send({
             ok: true,
@@ -486,106 +488,6 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         res.status(500).send('Hubo un error al guardar el libro');
     }
 });
-
-/*router.post('/add-libro', validate.protegerRuta('editor'), upload.fields([
-    { name: 'portada', maxCount: 1 },
-    { name: 'archivo', maxCount: 1 }
-]), async (req, res) => {
-    try {
-        const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
-
-        let archivoPath;
-        let avatarPath;
-
-        // Verificar si se han recibido categorías
-        if (!id_categorias || id_categorias.length === 0) {
-            return res.status(400).json({ mensaje: 'Debe proporcionar al menos una categoría' });
-        }
-
-        // Aquí puedes manejar si viene una o más categorías
-        const categoriasArray = Array.isArray(id_categorias) ? id_categorias : [id_categorias];
-        console.log('Categorías:', categoriasArray);
-
-               // Verificar si se han recibido categorías
-        if (!id_genero || id_genero.length === 0) {
-            return res.status(400).json({ mensaje: 'Debe proporcionar al menos un genero' });
-        }
-
-        // Aquí puedes manejar si viene una o más categorías
-        const generosArray = Array.isArray(id_genero) ? id_genero : [id_genero];
-        console.log('Categorías:', generosArray);
-
-        // Manejar los archivos subidos
-        if (req.files.portada) {
-            avatarPath = req.files.portada[0].path;
-            console.log("Portada subida: " + avatarPath);
-        }
-
-        if (req.files.archivo) {
-            archivoPath = req.files.archivo[0].path;
-            console.log("Archivo PDF subido: " + archivoPath);
-            await validarPDF(archivoPath);
-            const logoPath = 'public/logos/logoLibGra-Proto1.png'; // Ruta a tu logo para la marca de agua
-            archivoPath = await addImageWatermark(archivoPath, logoPath);
-        }
-
-        // Si no se subió ninguna imagen, asignar una portada predeterminada aleatoria
-        if (!avatarPath) {
-            const imagenesPredeterminadas = [
-                `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede1.png',
-                `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede2.png',
-                `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede3.png'
-            ];
-            const indiceAleatorio = Math.floor(Math.random() * imagenesPredeterminadas.length);
-            avatarPath = imagenesPredeterminadas[indiceAleatorio];
-            console.log("Portada predeterminada asignada: " + avatarPath);
-        }
-
-        const token_add = req.header('Authorization').split(' ');
-        const usuario = validate.obtenerUsuarioDesdeToken(token_add[1]);
-        const find_usuario = await Usuario.find({ EMAIL: usuario });
-        const added_usuario = find_usuario[0]._id;
-
-        // Crear una nueva instancia del modelo de libro con los datos
-        const newBook = new Libro({
-            titulo,
-            added_usuario,
-            id_autor,
-            id_categoria: categoriasArray,
-            isbn,
-            fecha_publicacion,
-            id_genero: generosArray,
-            descripcion,
-            activo,
-            archivo: archivoPath, // Usa la ruta del PDF modificado
-            portada: avatarPath
-        });
-
-        // Guardar el libro en la base de datos     
-        const libroGuardado = await newBook.save();
-
-        // Actualizar el campo libros_autor del autor correspondiente
-        const autor = await Autor.findById(id_autor);
-        if (!autor) {
-            return res.status(404).json({ mensaje: 'Autor no encontrado' });
-        }
-
-        // Añadir el nuevo libro al array libros_autor del autor
-        if (!autor.libros_autor.includes(libroGuardado._id)) {
-            autor.libros_autor.push(libroGuardado._id);
-            await autor.save();
-        }
-
-        res.status(200).send({
-            ok: true,
-            resultado: libroGuardado
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Hubo un error al guardar el libro');
-    }
-});*/
 
 
 // Ruta para obtener un libro específico
