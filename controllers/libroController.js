@@ -224,7 +224,7 @@ GET ARCHIVO PDF - 159
 router.get('/novedades-libros', async (req, res) => {
     try {
       const libros = await Libro.find().sort({ createdAt: -1 }) // Ordenar por fecha de creación en orden descendente
-          .limit(5) // Limitar los resultados a los últimos 5 libros    
+          .limit(6) // Limitar los resultados a los últimos 5 libros    
           .populate({
             path: 'id_autor',
             populate: [
@@ -400,50 +400,16 @@ router.get('/descargar-libro/:id', validate.protegerRuta(''), async (req, res) =
     }
 });
 
-/* Ruta para añadir un libro*/
+//Ruta para añadir un libro
 router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {
     try {
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;// Ruta para obtener los últimos 5 libros añadidos
-
-        router.get('/libros-novedades', async (req, res) => {
-            try {
-                // Encuentra los últimos 5 libros añadidos, ordenados por fecha de publicación
-                const libros = await Libro.find()
-                  .sort({ fecha_publicacion: -1 }) // Ordenar por fecha_publicacion descendente
-                  .limit(5) // Limitar los resultados a 5
-                  .populate({
-                    path: 'id_autor',
-                    populate: [
-                      { path: 'generos_autor' },  // Poblar generos dentro de Autor
-                      { path: 'libros_autor' }    // Poblar libros dentro de Autor
-                    ]
-                  }) 
-                  .populate('categorias_libro') // Poblar datos de la categoría
-                  .populate('generos_libro') // Poblar datos del género
-                  .populate('resenas_libro') 
-                  .populate('added_usuario')
-                  .exec(); // Ejecutar la consulta
-                  console.log("AQUIIIIIII LIBROS: "+libros);
-                // Si no hay libros encontrados
-                if (!libros.length) {
-                    return res.status(404).send('No se encontraron libros');
-                }
-        
-                // Responde con los libros encontrados
-                res.status(200).json(libros);
-            } catch (error) {
-                console.error(error);
-                res.status(500).send('Hubo un error al buscar los libros');
-            }
-        });
-        
-        let avatarPath;
-
+        let avatarPath;      
         const imagenesPredeterminadas = [
-            `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede1.png',
-            `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede2.png',
-            `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede3.png'
+            'public/uploads/imgLibro/portadaPrede1.jpeg',
+            'public/uploads/imgLibro/portadaPrede2.jpeg',
+            'public/uploads/imgLibro/portadaPrede3.jpeg'
         ];
         let portadaPrede;
 
@@ -480,6 +446,12 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         const find_usuario = await Usuario.find({ EMAIL: usuario });
         const added_usuario = find_usuario[0]._id;
 
+          // Buscar el autor
+          /*const autorr = await Autor.find({_id: id_autor});
+          if (!autorr) {
+              return res.status(404).json({ mensaje: 'Autor no encontrado' });
+          }*/
+ 
         // Crear una nueva instancia del modelo de libro con los datos
         const newBook = new Libro({
             titulo,
@@ -498,6 +470,12 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         // Guardar el libro en la base de datos     
         const libroGuardado = await newBook.save();
 
+        // Añadir el nuevo libro al array libros_autor del autor
+        /*if (!autorr.libros_autor.includes(libroGuardado._id)) {
+            autorr.libros_autor.push(libroGuardado._id);
+            await autorr.save();
+        }*/
+
         res.status(200).send({
             ok: true,
             resultado: libroGuardado
@@ -505,9 +483,109 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
 
     } catch (error) {
         console.error(error);
-        res.status(500).sendfind('Hubo un error al guardar el libro');
+        res.status(500).send('Hubo un error al guardar el libro');
     }
 });
+
+/*router.post('/add-libro', validate.protegerRuta('editor'), upload.fields([
+    { name: 'portada', maxCount: 1 },
+    { name: 'archivo', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
+
+        let archivoPath;
+        let avatarPath;
+
+        // Verificar si se han recibido categorías
+        if (!id_categorias || id_categorias.length === 0) {
+            return res.status(400).json({ mensaje: 'Debe proporcionar al menos una categoría' });
+        }
+
+        // Aquí puedes manejar si viene una o más categorías
+        const categoriasArray = Array.isArray(id_categorias) ? id_categorias : [id_categorias];
+        console.log('Categorías:', categoriasArray);
+
+               // Verificar si se han recibido categorías
+        if (!id_genero || id_genero.length === 0) {
+            return res.status(400).json({ mensaje: 'Debe proporcionar al menos un genero' });
+        }
+
+        // Aquí puedes manejar si viene una o más categorías
+        const generosArray = Array.isArray(id_genero) ? id_genero : [id_genero];
+        console.log('Categorías:', generosArray);
+
+        // Manejar los archivos subidos
+        if (req.files.portada) {
+            avatarPath = req.files.portada[0].path;
+            console.log("Portada subida: " + avatarPath);
+        }
+
+        if (req.files.archivo) {
+            archivoPath = req.files.archivo[0].path;
+            console.log("Archivo PDF subido: " + archivoPath);
+            await validarPDF(archivoPath);
+            const logoPath = 'public/logos/logoLibGra-Proto1.png'; // Ruta a tu logo para la marca de agua
+            archivoPath = await addImageWatermark(archivoPath, logoPath);
+        }
+
+        // Si no se subió ninguna imagen, asignar una portada predeterminada aleatoria
+        if (!avatarPath) {
+            const imagenesPredeterminadas = [
+                `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede1.png',
+                `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede2.png',
+                `${BASE_URL}`+'/public/uploads/imgLibro/portadaPrede3.png'
+            ];
+            const indiceAleatorio = Math.floor(Math.random() * imagenesPredeterminadas.length);
+            avatarPath = imagenesPredeterminadas[indiceAleatorio];
+            console.log("Portada predeterminada asignada: " + avatarPath);
+        }
+
+        const token_add = req.header('Authorization').split(' ');
+        const usuario = validate.obtenerUsuarioDesdeToken(token_add[1]);
+        const find_usuario = await Usuario.find({ EMAIL: usuario });
+        const added_usuario = find_usuario[0]._id;
+
+        // Crear una nueva instancia del modelo de libro con los datos
+        const newBook = new Libro({
+            titulo,
+            added_usuario,
+            id_autor,
+            id_categoria: categoriasArray,
+            isbn,
+            fecha_publicacion,
+            id_genero: generosArray,
+            descripcion,
+            activo,
+            archivo: archivoPath, // Usa la ruta del PDF modificado
+            portada: avatarPath
+        });
+
+        // Guardar el libro en la base de datos     
+        const libroGuardado = await newBook.save();
+
+        // Actualizar el campo libros_autor del autor correspondiente
+        const autor = await Autor.findById(id_autor);
+        if (!autor) {
+            return res.status(404).json({ mensaje: 'Autor no encontrado' });
+        }
+
+        // Añadir el nuevo libro al array libros_autor del autor
+        if (!autor.libros_autor.includes(libroGuardado._id)) {
+            autor.libros_autor.push(libroGuardado._id);
+            await autor.save();
+        }
+
+        res.status(200).send({
+            ok: true,
+            resultado: libroGuardado
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Hubo un error al guardar el libro');
+    }
+});*/
 
 
 // Ruta para obtener un libro específico

@@ -8,6 +8,9 @@ const usuario = require('./controllers/userController.js');
 const libros = require('./controllers/libroController.js');
 const librosLeidos = require('./controllers/libroLeidoController.js');
 const poblacion = require('./controllers/poblacionController.js');
+const genero = require('./controllers/generoController.js');
+const autor = require('./controllers/autorController.js');
+const categoria = require('./controllers/categoriaController.js');
 
 const methodOverride = require('method-override');
 const cors = require('cors');
@@ -47,8 +50,8 @@ app.use(express.json());
 
 
 // Configurar body-parser para permitir tamaños de cuerpo más grandes
-app.use(bodyParser.json({ limit: '100kb' }));
-app.use(bodyParser.urlencoded({ limit: '100kb', extended: true }));
+app.use(express.json({ limit: '50mb' })); // Ajusta el tamaño según sea necesario
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(methodOverride(function(req, res) {
     if (req.body && typeof req.body === 'object' && '_method' in req.body) {
@@ -66,7 +69,9 @@ app.use('/usuarios', usuario);
 app.use('/libros', libros);
 app.use('/libros-leidos', librosLeidos);
 app.use('/poblaciones', poblacion);
-
+app.use('/generos', genero);
+app.use('/autores', autor);
+app.use('/categorias', categoria);
 
 
 // Escuchar en el puerto especificado
