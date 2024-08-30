@@ -15,9 +15,9 @@ const Categoria = require('../models/categoriaModel.js');
 const Genero  = require('../models/generoModel.js');
 const Resena  = require('../models/resenaModel.js');
 const directorioPadre = path.join(__dirname, '..');
-let guardarImagen = path.join('/public/uploads/imgLibros/');
-let guardarPDFOriginales = path.join('/public/uploads/pdfLibrosOriginales');
-let guardarPDF = path.join('/public/uploads/pdfLibros');
+let guardarImagen = path.join(directorioPadre+'/public/uploads/imgLibros/');
+let guardarPDFOriginales = path.join(directorioPadre+'/public/uploads/pdfLibrosOriginales');
+let guardarPDF = path.join(directorioPadre+'/public/uploads/pdfLibrosLogo');
 
 // Configuración de la URL base desde las variables de entorno
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
@@ -203,6 +203,8 @@ async function addImageWatermark(pdfPath, imagePath) {
 
     // Guardar el PDF modificado
     const modifiedPdfBytes = await pdfDoc.save();
+   
+
     // Extrae el nombre original del archivo y crea una nueva ruta en el directorio de salida
     const originalFileName = path.basename(pdfPath, path.extname(pdfPath));
     const modifiedPdfPath = path.join(guardarPDF, `${originalFileName}_libgra.pdf`);
@@ -407,20 +409,31 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         let archivoPath;// Ruta para obtener los últimos 5 libros añadidos
         let avatarPath;      
         const imagenesPredeterminadas = [
-            'public/uploads/imgLibro/portadaPrede1.jpeg',
-            'public/uploads/imgLibro/portadaPrede2.jpeg',
-            'public/uploads/imgLibro/portadaPrede3.jpeg'
+            'imgLibros/portadaPrede1.jpeg',
+            'imgLibros/portadaPrede2.jpeg',
+            'imgLibros/portadaPrede3.jpeg'
         ];
         let portadaPrede;
 
         req.files.forEach(file => {
             if (file.mimetype.startsWith('image/')) {
                 // Procesar imágenes
+
                 avatarPath = file.path;
-                console.log("Imagen subida: " + avatarPath);
+                const baseDir = 'imgLibros';
+                const baseDirIndex = avatarPath.indexOf(baseDir);
+                console.log("aquiiiiii portada: "+ baseDirIndex);
+                
+                if (baseDirIndex !== -1) {
+                    const relativePath = avatarPath.substring(baseDirIndex + baseDir.length);
+                    avatarPath = path.join(baseDir, relativePath);
+
+                    console.log("Imagen subida: " + avatarPath);
+                }
             } else if (file.mimetype === 'application/pdf') {
                 // Procesar PDFs
                 archivoPath = file.path; // La ruta del archivo PDF subido
+                
             }
         });
 
@@ -431,6 +444,15 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
                 // Añadir la marca de agua a la segunda página del PDF
                 const logoPath = 'public/logos/logoLibGra-Proto1.png'; // Ruta a tu logo para la marca de agua
                 archivoPath = await addImageWatermark(file.path, logoPath);
+                const baseDir2 = 'pdfLibrosLogo';
+                const baseDirIndex2 = archivoPath.indexOf(baseDir2);
+
+                if (baseDirIndex2 !== -1) {
+                    const relativePath2 = archivoPath.substring(baseDirIndex2 + baseDir2.length);
+                    archivoPath = path.join(baseDir2, relativePath2);
+
+                    console.log("Archivo subida: " + archivoPath);
+                }
             }
         }));
 

@@ -16,7 +16,7 @@ const methodOverride = require('method-override');
 const cors = require('cors');
 const app = express();
 // función middleware para servir archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public/uploads')));
 
 app.use(cors({
     origin: 'http://localhost:4200', // Cambia esto al dominio de tu frontend
