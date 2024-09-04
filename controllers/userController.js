@@ -1,5 +1,6 @@
 
 const Usuario = require('../models/userModel.js');
+
 const bcrypt = require('bcrypt');
 const express = require('express');
 const jwt = require('jsonwebtoken');
@@ -8,7 +9,7 @@ const fs = require('fs');
 let router = express.Router();
 const validate = require('./validate-token');
 const _ = require('underscore');
-
+const cors = require('cors');
 const mongoose = require('mongoose');
 const sharp = require('sharp');
 let TOKEN_SECRET = 'secreto';
@@ -21,7 +22,7 @@ const titulos = {
     'otro': 'Sre. '
 };
 const directorioPadre = path.join(__dirname, '..');
-let guardarImagen = path.join(directorioPadre, '/public/uploads/avatar/');
+let guardarImagen = path.join('/public/uploads/avatar/');
 
 /* DETERMINAR NAMEAPP, SI EXISTE UNO IGUAL DARLE OPCIONES DISTINTAS */
 async function obtenerVariantesNickname(nickName) {
@@ -66,9 +67,18 @@ const uploadAvatar = (req, res) => {
 
 /* CODIFICAR EL PASSWORD */
 async function codifyPassword(passwordBody) {
-    const saltos = await bcrypt.genSalt(10);
-    let password;
-    return password = await bcrypt.hash(passwordBody, saltos);
+    try {
+        if (!passwordBody) {
+            throw new Error('No hay contraseña');
+        }
+        const saltos = await bcrypt.genSalt(10);
+        const password = await bcrypt.hash(passwordBody, saltos);
+
+        return password;
+
+    } catch (error) {
+        throw error;
+    }
 }
 /*OBTENER ULTIMO USUARIO DEL SISTEMA */
 async function obtenerUltimoUsuario() {
@@ -317,22 +327,25 @@ router.put('/edit-profile/:id', validate.protegerRuta(''), async(req, res) => {
 });
 
 //MODIFICAR USUARIO (PASSWORD)
-router.post('/edit-password/:id', validate.protegerRuta(''), async(req, res) => {
+router.post('/edit-password/:id', cors(), validate.protegerRuta(''), async(req, res) => {
     let id = req.params.id;
     let passEncriptada = await codifyPassword(req.body.PASSWORD);
 
     try {
         const passActualizadaUsu = await Usuario.findByIdAndUpdate(id, { $set: { PASSWORD: passEncriptada } }, { new: true, runValidators: true }).lean();
         if (!passActualizadaUsu) {
+            console.log('Usuario no encontrado')
             return res.status(404).json({
                 ok: false,
                 mensaje: 'Usuario no encontrado'
             });
         }
+        console.log('ambiada la password correctamente')
 
         res.json({
             ok: true,
-            usuario: passActualizadaUsu
+            usuario: passActualizadaUsu,
+            mensaje: 'Cambiada la password correctamente'
         });
     } catch (err) {
         res.status(400).json({

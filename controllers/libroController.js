@@ -328,6 +328,42 @@ router.get('/activos', async (req, res) => {
   }
 });
 
+// Definir la ruta con parámetro de usuario
+router.get('/activos/:userId', async (req, res) => {
+    try {
+        // Extraer el `userId` del parámetro de ruta
+        const userId = req.params.userId;
+
+        // Construir la consulta
+        const query = { activo: true, added_usuario: userId };
+
+        const libros = await Libro.find(query)
+            .populate({
+                path: 'id_autor',
+                populate: [
+                    { path: 'generos_autor' },  // Poblar generos dentro de Autor
+                    { path: 'libros_autor' }    // Poblar libros dentro de Autor
+                ]
+            }) 
+            .populate('categorias_libro') // Poblar datos de la categoría
+            .populate('generos_libro') // Poblar datos del género
+            .populate('resenas_libro') 
+            .populate('added_usuario')
+            .exec(); // Ejecutar la consulta
+
+        if (libros.length > 0) {
+            res.send({ ok: true, resultado: libros });
+        } else {
+            res.status(404).send({ ok: false, error: "No se encontraron libros" });
+        }
+    } catch (err) {
+        res.status(500).send({
+            ok: false,
+            error: err.message
+        });
+    }
+});
+
 // Ruta para obtener todos los libros - NO ACTIVOS
 router.get('/no-activos', validate.protegerRuta('soid'), async (req, res) => {
     try {
