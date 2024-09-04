@@ -485,11 +485,11 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
 
                 if (baseDirIndex2 !== -1) {
                     const relativePath2 = archivoPath.substring(baseDirIndex2 + baseDir2.length);
-                    const relativePath2Modify = relativePath2.split('\\');
-                    const aaa = relativePath2Modify.join('/');
+
                     console.log("Pruebaaa: " + relativePath2);
 
-                    archivoPath = path.join(baseDir2, aaa);
+                    archivoPath = path.join(baseDir2, relativePath2);
+                    archivoPath = archivoPath.replace(/\\/g, '/');
 
                     console.log("Archivo subida: " + archivoPath);
                 }
