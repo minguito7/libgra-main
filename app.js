@@ -19,7 +19,10 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public/uploads')));
 app.use(cors({
     origin: 'http://localhost:4200',
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200, 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Length', 'X-Kuma-Revision'], 
 }));
 // Configuración de la URL base desde las variables de entorno
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
@@ -65,7 +68,11 @@ const PORT = process.env.PORT || 3000; // Utiliza el puerto proporcionado por el
 app.get('/', libros);
 app.use('/auth', auth);
 app.use('/usuarios', usuario);
-app.use('/libros', libros);
+app.use('/libros', libros,cors({
+    origin: '*',
+    methods: ['GET','POST','PUT','DELETE'],
+    allowedHeaders: ['Content-Type'],
+  }));
 app.use('/libros-leidos', librosLeidos);
 app.use('/poblaciones', poblacion);
 app.use('/generos', genero);

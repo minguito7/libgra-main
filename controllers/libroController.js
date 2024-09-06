@@ -396,45 +396,47 @@ router.get('/no-activos', validate.protegerRuta('soid'), async (req, res) => {
 });
 
 // Ruta para descargar el archivo del libro
+
 router.get('/descargar-libro/:id', validate.protegerRuta(''), async (req, res) => {
     try {
         const libroId = req.params.id;
-
+    
         // Buscar el libro en la base de datos por su ID
         const libro = await Libro.findById(libroId);
-
-        if (!libro || libro.activo == false) {
-            return res.status(404).send({
-                ok: false,
-                mensaje: 'Libro no encontrado'
-            });
+    
+        if (!libro || libro.activo === false) {
+          return res.status(404).send({
+            ok: false,
+            mensaje: 'Libro no encontrado'
+          });
         }
-
-        // Obtener la ruta del archivo
+    
+        // Obtener la ruta del archivo del libro (suponiendo que está almacenado en el campo `archivo`)
         const archivoPath = libro.archivo;
-
-        // Comprobar si el archivo existe en awaitel servidor
-        if (!archivoPath || !fs.existsSync(archivoPath)) {
-            return res.status(404).send({
-                ok: false,
-                mensaje: 'Archivo no encontrado o no existe'
-            });
+        console.log('AQUIIII archivoPath: '+ './public/uploads'+archivoPath);
+    
+        // Comprobar si el archivo existe en el servidor
+        if (!fs.existsSync('./public/uploads'+archivoPath)) {
+            console.log('AQUIIII ESTAMOS');
+          return res.status(404).send({
+            ok: false,
+            mensaje: 'Archivo no encontrado'
+          });
         }
-
-        // Enviar la ruta para descargar el archivo
-        res.download(path.resolve(archivoPath), (err) => {
-            if (err) {
-                console.error('Error al descargar el archivo:', err);
-                return res.status(500).send({
-                    ok: false,
-                    mensaje: 'Error al descargar el archivo'
-                });
-            }
-        });
-
+    
+        // Establecer los encabezados adecuados para el archivo PDF
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline; filename="' + path.basename(archivoPath) + '"');
+    
+        // Leer el archivo y enviarlo como respuesta
+        const stream = fs.createReadStream(archivoPath);
+        stream.pipe(res);
     } catch (error) {
-        console.error('Error en la descarga del archivo:', error);
-        res.status(500).send('Hubo un error al descargar el archivo');
+        console.error('Error al enviar el archivo:', error);
+        res.status(500).send({
+          ok: false,
+          mensaje: 'Hubo un error al procesar la solicitud'
+        });
     }
 });
 
@@ -454,7 +456,7 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         req.files.forEach(file => {
             if (file.mimetype.startsWith('image/')) {
                 // Procesar imágenes
-
+                esp._id
                 avatarPath = file.path;
                 const baseDir = 'imgLibros';
                 const baseDirIndex = avatarPath.indexOf(baseDir);
@@ -556,11 +558,16 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
 router.get('/:id', validate.protegerRuta(''), async (req, res) => {
     const { id } = req.params;
     try {
+
         const book = await Libro.findById(id);
         if (!book) {
+            
             return res.status(404).send('Libro no encontrado');
         }
+        //res.setHeader('Access-Control-Allow-Origin', '*')
+        //res.setHeader('Content-Type', 'application/pdf');
         res.status(200).json(book);
+        
     } catch (error) {
         console.error(error);
         res.status(500).send('Hubo un error al buscar el libro');
