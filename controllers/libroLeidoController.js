@@ -109,7 +109,7 @@ router.get('/:idUsuario/:idLibro', validate.protegerRuta(''),  async (req, res) 
 router.get('/comprobar-pagina/:idUsuario/:idLibro', validate.protegerRuta(''), async (req, res) => {
   try {
     let respuesta = false;
-    const { pagina_actual } = req.body;
+    const pagina_actual = parseInt(req.query.pagina_actual, 10);  // Extraer de req.query y convertir a número
     const librosUsuarioSolicitado = [];
 
     // Busca el registro del libro leído por el usuario
@@ -132,7 +132,7 @@ router.get('/comprobar-pagina/:idUsuario/:idLibro', validate.protegerRuta(''), a
 
     // Ordenar por fechas (más reciente a más antigua)
     librosUsuarioSolicitado.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura));
-    console.log(librosUsuarioSolicitado[0].pagina_actual + '- pagina enviada: ' + pagina_actual)
+
     // Si la página actual es menor que la última registrada, respuesta es true
     if (librosUsuarioSolicitado[0].pagina_actual > pagina_actual) {
       respuesta = true;
@@ -144,6 +144,7 @@ router.get('/comprobar-pagina/:idUsuario/:idLibro', validate.protegerRuta(''), a
     res.status(500).json({ error: 'Error al obtener los datos de lectura' + error });
   }
 });
+
 
 
 //DEVOLVER TODOS LOS LIBROS LEIDOS POR UN USUARIO
