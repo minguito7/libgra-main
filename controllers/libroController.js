@@ -456,7 +456,7 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
         req.files.forEach(file => {
             if (file.mimetype.startsWith('image/')) {
                 // Procesar imágenes
-                esp._id
+                //esp._id
                 avatarPath = file.path;
                 const baseDir = 'imgLibros';
                 const baseDirIndex = avatarPath.indexOf(baseDir);

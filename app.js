@@ -68,11 +68,7 @@ const PORT = process.env.PORT || 3000; // Utiliza el puerto proporcionado por el
 app.get('/', libros);
 app.use('/auth', auth);
 app.use('/usuarios', usuario);
-app.use('/libros', libros,cors({
-    origin: '*',
-    methods: ['GET','POST','PUT','DELETE'],
-    allowedHeaders: ['Content-Type'],
-  }));
+app.use('/libros', libros);
 app.use('/libros-leidos', librosLeidos);
 app.use('/poblaciones', poblacion);
 app.use('/generos', genero);

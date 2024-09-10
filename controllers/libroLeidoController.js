@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const LibroLeidoModel = require('../models/librosLeidosModel.js');
+const Usuario = require('../models/userModel.js');
 const validate = require('./validate-token');
 
 //DEVOLVER LIBROS LEIDOS
@@ -77,6 +78,74 @@ router.get('/:id', validate.protegerRuta(''),  async (req, res) => {
   }
 })
 
+//DEVOLVER LIBRO LEIDO TRUE SI EL NUMERO ES > QUE EL ULTIMO NUMERO DE PAGINAS GUARDADO
+router.get('/:idUsuario/:idLibro', validate.protegerRuta(''),  async (req, res) => {
+  try {
+    const librosUsuarioSolicitado = [];
+
+    // Busca el registro del libro leído por el usuario
+    const libroLeido = await LibroLeidoModel.find({id_libro:req.params.idLibro});
+
+
+    if (!libroLeido) {
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+
+    libroLeido.forEach( resp =>{
+      if(resp.id_usuario == req.params.idUsuario){
+        librosUsuarioSolicitado.push(resp);
+      }
+    });
+    // Ordenar por fechas (más reciente a más antigua)
+    librosUsuarioSolicitado.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura));
+
+    res.send({ ok: true, resultado: librosUsuarioSolicitado});  
+
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los datos de lectura' + error });
+  }
+})
+
+router.get('/comprobar-pagina/:idUsuario/:idLibro', validate.protegerRuta(''), async (req, res) => {
+  try {
+    let respuesta = false;
+    const { pagina_actual } = req.body;
+    const librosUsuarioSolicitado = [];
+
+    // Busca el registro del libro leído por el usuario
+    const libroLeido = await LibroLeidoModel.find({ id_libro: req.params.idLibro });
+
+    if (!libroLeido) {
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+
+    libroLeido.forEach(resp => {
+      if (resp.id_usuario == req.params.idUsuario) {
+        librosUsuarioSolicitado.push(resp);
+      }
+    });
+
+    // Si no hay registros del libro leído por el usuario, respuesta es true y termina la ejecución
+    if (librosUsuarioSolicitado.length === 0) {
+      return res.send({ ok: true, resultado: true });
+    }
+
+    // Ordenar por fechas (más reciente a más antigua)
+    librosUsuarioSolicitado.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura));
+    console.log(librosUsuarioSolicitado[0].pagina_actual + '- pagina enviada: ' + pagina_actual)
+    // Si la página actual es menor que la última registrada, respuesta es true
+    if (librosUsuarioSolicitado[0].pagina_actual > pagina_actual) {
+      respuesta = true;
+    }
+
+    res.send({ ok: true, resultado: respuesta });
+
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los datos de lectura' + error });
+  }
+});
+
+
 //DEVOLVER TODOS LOS LIBROS LEIDOS POR UN USUARIO
 router.get('/usuario/:id', validate.protegerRuta(''),  async (req, res) => {
   try {
@@ -113,12 +182,13 @@ router.get('/usuario/:id', validate.protegerRuta(''),  async (req, res) => {
   }
 })
 
-//LEER UN LIBRO
+//AÑADIR UN LIBRO
 router.post('/add-libro-leido', validate.protegerRuta(''),  async (req, res) => {
   try {
     const { id_usuario, id_libro, pagina_actual } = req.body; // Datos enviados en el cuerpo de la solicitud
     //const id_usuario = req.user.id; // Obtén el ID del usuario del middleware de autenticación
     const pagina =  Number(pagina_actual)
+    //console.log('QUIIIIII: ADD LIBRO LEIDO ' + id_usuario);
     
     // Valida que la página actual sea un número válido
     if (isNaN(pagina) || pagina < 0) {
@@ -134,7 +204,7 @@ router.post('/add-libro-leido', validate.protegerRuta(''),  async (req, res) => 
 
     // Guarda el nuevo libro leído
     await nuevoLibroLeido.save();
-
+    //console.log('libro leido perfectamentee: ' + nuevoLibroLeido);
     res.status(201).json({ message: 'Libro leído añadido correctamente', nuevoLibroLeido });
   } catch (error) {
     res.status(500).json({ error: 'Error al añadir el libro leído' });

@@ -6,7 +6,6 @@ const libroLeidoSchema = new mongoose.Schema({
     fecha_lectura: { type: Date, default: Date.now },
     pagina_actual: { type: Number, default: 0 }, // Nuevo campo para la página actual
     completado: { type: Boolean, default: false } 
-    
 });
 
 // Plugin para autoincrementar el ID
