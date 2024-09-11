@@ -78,7 +78,7 @@ async function obtenerUltimoUsuario() {
 
         // Si se encontró un usuario, devolver su ID + 1, de lo contrario devolver 1
         if (ultimoUsuario > 0) {
-            console.log(ultimoUsuario);
+            //console.log(ultimoUsuario);
             return ultimoUsuario + 1;
         } else {
             return 1; // Establecer el ID en 1 si no hay usuarios
@@ -91,7 +91,7 @@ async function obtenerUltimoUsuario() {
 
 //-- lOGIN// Método para generar el token tras login correcto
 let generarToken = (login, role) => {
-    console.log(role);
+    //console.log(role);
     return jwt.sign({ login: login, role: role },
         TOKEN_SECRET, { expiresIn: 86400 });
 };
@@ -136,8 +136,8 @@ function calcularLetraDNI(dniNumeros) {
 
 router.post('/registro', upload.single('myFile'), async (req, res) => {
     try {
-        console.log('Request Body:', req.body);
-console.log('Uploaded File:', req.file);
+        //console.log('Request Body:', req.body);
+//console.log('Uploaded File:', req.file);
 
         const { DNI, NAMEAPP, PASSWORD, NOMBRE, APELLIDOS, EMAIL, DIRECCION, ID_POBLACION, COD_POSTAL, SEXO } = req.body;
 
@@ -226,7 +226,7 @@ console.log('Uploaded File:', req.file);
             TITULO1: titulo1,
             AVATAR: avatarPath
         });
-        console.log(ID_POBLACION)
+        //console.log(ID_POBLACION)
         // Guardar el nuevo usuario en la base de datos
         const usuarioGuardado = await nuevoUsuario.save();
         res.status(200).send({
@@ -308,7 +308,7 @@ router.get('/validate-token', (req, res) => {
       }
       const usuarioLogged = await Usuario.findOne({EMAIL: decoded.login});
       // Token válido
-      console.log(usuarioLogged);
+      //console.log(usuarioLogged);
       res.json({ valid: true, usuarioLogged });
     });
   });

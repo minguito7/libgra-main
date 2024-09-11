@@ -225,7 +225,7 @@ GET ARCHIVO PDF - 159
 */
 router.get('/novedades-libros', async (req, res) => {
     try {
-      const libros = await Libro.find().sort({ createdAt: -1 }) // Ordenar por fecha de creación en orden descendente
+      const libros = await Libro.find({activo:true}).sort({ createdAt: -1 }) // Ordenar por fecha de creación en orden descendente
           .limit(6) // Limitar los resultados a los últimos 5 libros    
           .populate({
             path: 'id_autor',
@@ -581,7 +581,7 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
 
 
 // Ruta para actualizar un libro
-router.put('/edit-libro/:id', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {
+router.put('/edit-libro/:id', validate.protegerRuta('editor','admin','soid'), upload.array('files', 2), async (req, res) => {
     try {home
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;
@@ -650,7 +650,7 @@ router.put('/edit-libro/:id', validate.protegerRuta('editor'), upload.array('fil
         libroExistente.portada = avatarPath || libroExistente.portada;
 
         // Guardar los cambios en la base de datos
-        const libroActualizado = await libroExistente.save();
+        const libroActselectedSectionualizado = await libroExistente.save();
 
         res.status(200).send({
             ok: true,
@@ -665,42 +665,54 @@ router.put('/edit-libro/:id', validate.protegerRuta('editor'), upload.array('fil
 
 
 // Ruta para eliminar un libro
-router.delete('/delete/:id', validate.protegerRuta('editor'), async (req, res) => {
+router.delete('/delete/:id', validate.protegerRuta(['editor','admin','soid']), async (req, res) => {
     const { id } = req.params;
     let user;
     try {
+        // Obtener el usuario desde el token
         const usuToken = await obtenerUsuario(req);
         user = await Usuario.findOne({ EMAIL: usuToken.login });
+
         // Si no se encuentra por email, intenta buscar por nameapp (si se dispone del valor)
         if (!user && usuToken.nameapp) {
             user = await Usuario.findOne({ NAMEAPP: usuToken.nameapp });
         }
-        
-        const libro = await Libro.findById(req.params.id).exec();
 
-        if(user.id == libro.added_usuario || user.ROLE == 'admin' || user.ROLE == 'soid'){
-            // Intentar actualizar el libro y establecer el campo 'activo' a false
+        // Buscar el libro
+        const libro = await Libro.findById(id).exec();
+
+        if (!libro) {
+            return res.status(404).send('Libro no encontrado');
+        }
+
+        // Verificar permisos
+        if (user.id == libro.added_usuario || user.ROLE == 'admin' || user.ROLE == 'soid') {
+            // Actualizar el libro y establecer el campo 'activo' a false
             const updatedBook = await Libro.findByIdAndUpdate(
                 id,
-                { activo: false }, // Actualiza el campo 'activo' a false
-                { new: true } // Devuelve el documento modificado
+                { activo: false },
+                { new: true }
             );
 
-            // Verificar si el libro fue encontrado y actualizado
             if (!updatedBook) {
-                return res.status(404).send('Libro no encontrado');
+                return res.status(404).send('No se pudo actualizar el libro');
             }
-            res.status(200).send('Libro desactivado correctamente');
+            if(updatedBook){
+                res.status(200).send({
+                    ok: true,
+                    resultado: 'Libro desactivado correctamente'
+                });
+            }
+        } else {
+            res.status(403).send('No tienes permisos para desactivar este libro');
         }
-        else{
-            return res.status(404).send('No puedes borrar este libro ya que no eres el editor. Tampoco eres Administrador');
-        }
-       
+
     } catch (error) {
         console.error(error);
         res.status(500).send('Hubo un error al desactivar el libro');
     }
 });
+
 
 
 module.exports = router;
