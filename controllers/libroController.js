@@ -441,9 +441,9 @@ router.get('/descargar-libro/:id', validate.protegerRuta(''), async (req, res) =
 });
 
 //Ruta para añadir un libro
-router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files', 2), async (req, res) => {
+router.post('/add-libro', validate.protegerRuta(['editor','soid','admin']), upload.array('files', 2), async (req, res) => {
     try {
-        const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
+        const { titulo, categorias_libro, id_autor, isbn, fecha_publicacion, generos_libro, descripcion, activo } = req.body;
         let archivoPath;// Ruta para obtener los últimos 5 libros añadidos
         let avatarPath;      
         const imagenesPredeterminadas = [
@@ -516,16 +516,18 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
           if (!autorr) {
               return res.status(404).json({ mensaje: 'Autor no encontrado' });
           }
-          
+          console.log('CAtegoria: '+categorias_libro)
+          console.log('Genero: '+ generos_libro)
+        
         // Crear una nueva instancia del modelo de libro con los datos
         const newBook = new Libro({
             titulo,
             added_usuario,
             id_autor,
-            id_categoria,
+            categorias_libro,
             isbn,
             fecha_publicacion,
-            id_genero,
+            generos_libro,
             descripcion,
             activo,
             archivo: archivoPath, // Usa la ruta del PDF modificado
@@ -534,7 +536,6 @@ router.post('/add-libro', validate.protegerRuta('editor'), upload.array('files',
 
         // Guardar el libro en la base de datos     
         const libroGuardado = await newBook.save();
-
         // Añadir el nuevo libro al array libros_autor del autor
         
         autorr.libros_autor.push(libroGuardado._id);
@@ -665,53 +666,27 @@ router.put('/edit-libro/:id', validate.protegerRuta('editor','admin','soid'), up
 
 
 // Ruta para eliminar un libro
-router.delete('/delete/:id', validate.protegerRuta(['editor','admin','soid']), async (req, res) => {
+router.put('/cambiar-estado/:id', validate.protegerRuta(['editor', 'admin', 'soid']), async (req, res) => {
     const { id } = req.params;
-    let user;
     try {
-        // Obtener el usuario desde el token
-        const usuToken = await obtenerUsuario(req);
-        user = await Usuario.findOne({ EMAIL: usuToken.login });
-
-        // Si no se encuentra por email, intenta buscar por nameapp (si se dispone del valor)
-        if (!user && usuToken.nameapp) {
-            user = await Usuario.findOne({ NAMEAPP: usuToken.nameapp });
-        }
-
-        // Buscar el libro
-        const libro = await Libro.findById(id).exec();
-
-        if (!libro) {
-            return res.status(404).send('Libro no encontrado');
-        }
-
-        // Verificar permisos
-        if (user.id == libro.added_usuario || user.ROLE == 'admin' || user.ROLE == 'soid') {
-            // Actualizar el libro y establecer el campo 'activo' a false
-            const updatedBook = await Libro.findByIdAndUpdate(
-                id,
-                { activo: false },
-                { new: true }
-            );
-
-            if (!updatedBook) {
-                return res.status(404).send('No se pudo actualizar el libro');
-            }
-            if(updatedBook){
-                res.status(200).send({
-                    ok: true,
-                    resultado: 'Libro desactivado correctamente'
-                });
-            }
-        } else {
-            res.status(403).send('No tienes permisos para desactivar este libro');
-        }
-
+      const libro = await Libro.findById(id);
+      if (!libro) {
+        return res.status(404).send('Libro no encontrado');
+      }
+  
+      // Alternar el estado de 'activo'
+      libro.activo = !libro.activo;
+      await libro.save();
+  
+      res.status(200).send({
+        ok: true,
+        resultado: 'Estado del libro actualizado correctamente',
+      });
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Hubo un error al desactivar el libro');
+      res.status(500).send('Hubo un error al actualizar el estado del libro');
     }
-});
+  });
+  
 
 
 

@@ -4,7 +4,7 @@ const libroSchema = new mongoose.Schema({
     added_usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
     id_autor: { type: mongoose.Schema.Types.ObjectId, ref: 'Autor', required: true },
     categorias_libro: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Categoria', required: true }],
-    isbn: { type: String, required: true, unique: true },
+    isbn: { type: String, required: true },
     fecha_publicacion: { type: Date, required: true },
     createdAt: { type: Date, default: Date.now },
     generos_libro: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Genero', required: true }],
