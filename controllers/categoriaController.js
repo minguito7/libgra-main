@@ -3,6 +3,32 @@ const Categoria = require('../models/categoriaModel');
 const express = require('express');
 let router = express.Router();
 
+async function obtenerUltimaCAt() {
+    try {
+        // Consultar todos los usuarios ordenados por el ID de manera descendente
+
+        const allGenero = await Categoria.find();
+        let ultimoCat = 1;
+        allGenero.forEach(g => {
+            //console.log(usuario);
+            if (g.numCategoria > ultimoCat) {
+                ultimoCat = g.numCategoria
+            }
+        });
+
+        // Si se encontró un usuario, devolver su ID + 1, de lo contrario devolver 1
+        if (ultimoCat > 0) {
+            //console.log(ultimoUsuario);
+            return ultimoCat + 1;
+        } else {
+            return 1; // Establecer el ID en 1 si no hay usuarios
+        }
+    } catch (error) {
+        console.error('Error al obtener el último NUM de categoria:', error);
+        throw error; // Puedes manejar el error según sea necesario en tu aplicación
+    }
+}
+
 router.post('/add-categoria', async (req, res) => {
     try {
         const { nombre } = req.body;
@@ -11,9 +37,9 @@ router.post('/add-categoria', async (req, res) => {
         if (!nombre) {
             return res.status(400).json({ mensaje: 'El nombre es obligatorio' });
         }
-
+        let ultCat = await obtenerUltimaCAt();
         // Crear una nueva instancia del modelo
-        const nuevaCategoria = new Categoria({nombre});
+        const nuevaCategoria = new Categoria({nombre,ultCat});
 
         // Guardar la nueva población en la base de datos
         await nuevaCategoria.save();

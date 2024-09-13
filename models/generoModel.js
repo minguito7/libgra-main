@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 
 const generoModel = new mongoose.Schema({
     nombre: { type: String, required: true },
+    numGenero: { type: Number }
 
 });
 

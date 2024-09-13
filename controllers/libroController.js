@@ -560,7 +560,18 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
     const { id } = req.params;
     try {
 
-        const book = await Libro.findById(id);
+        const book = await Libro.findById(id).populate({
+            path: 'id_autor',
+            populate: [
+              { path: 'generos_autor' },  // Poblar generos dentro de Autor
+              { path: 'libros_autor' }    // Poblar libros dentro de Autor
+            ]
+          }) 
+          .populate('categorias_libro') // Poblar datos de la categoría
+          .populate('generos_libro')// Poblar datos del género
+          .populate('resenas_libro') 
+          .populate('added_usuario')
+          .exec();
         if (!book) {
             
             return res.status(404).send('Libro no encontrado');
