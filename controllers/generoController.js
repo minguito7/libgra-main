@@ -1,5 +1,5 @@
 const Genero = require('../models/generoModel');
-
+const validate = require('./validate-token');
 const express = require('express');
 let router = express.Router();
 
@@ -30,7 +30,7 @@ async function obtenerUltimoGenero() {
     }
 }
 
-router.post('/add-genero', async (req, res) => {
+router.post('/add-genero', validate.protegerRuta(['editor','soid','admin']) ,async (req, res) => {
     try {
         const { nombre } = req.body;
         console.log(nombre);

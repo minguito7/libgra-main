@@ -1,5 +1,5 @@
 const Categoria = require('../models/categoriaModel');
-
+const validate = require('./validate-token');
 const express = require('express');
 let router = express.Router();
 
@@ -29,7 +29,7 @@ async function obtenerUltimaCAt() {
     }
 }
 
-router.post('/add-categoria', async (req, res) => {
+router.post('/add-categoria', validate.protegerRuta(['editor','soid','admin']) ,async (req, res) => {
     try {
         const { nombre } = req.body;
         
