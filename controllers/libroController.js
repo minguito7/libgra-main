@@ -365,7 +365,7 @@ router.get('/activos/:userId', async (req, res) => {
 });
 
 // Ruta para obtener todos los libros - NO ACTIVOS
-router.get('/no-activos', validate.protegerRuta('soid'), async (req, res) => {
+router.get('/no-activos', validate.protegerRuta(['soid','admin']), async (req, res) => {
     try {
       const libros = await Libro.find({activo: false})
           .populate({
@@ -593,7 +593,7 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
 
 
 // Ruta para actualizar un libro
-router.put('/edit-libro/:id', validate.protegerRuta('editor','admin','soid'), upload.array('files', 2), async (req, res) => {
+router.put('/edit-libro/:id', validate.protegerRuta(['editor','admin','soid']), upload.array('files', 2), async (req, res) => {
     try {home
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;

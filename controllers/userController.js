@@ -22,7 +22,7 @@ const titulos = {
     'otro': 'Sre. '
 };
 const directorioPadre = path.join(__dirname, '..');
-let guardarImagen = path.join('/public/uploads/avatar/');
+let guardarImagen = path.join(directorioPadre+'/public/uploads/avatar/');
 
 /* DETERMINAR NAMEAPP, SI EXISTE UNO IGUAL DARLE OPCIONES DISTINTAS */
 async function obtenerVariantesNickname(nickName) {

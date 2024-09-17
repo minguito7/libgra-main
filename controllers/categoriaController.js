@@ -74,7 +74,7 @@ router.get('/libros/:id', async (req, res) => {
           .populate('resenas_libro') 
           .populate('added_usuario')
           .exec();;
-        console.log('Categoria: '+categoria);
+        //console.log('Categoria: '+categoria);
 
         const librosCategoria = [];
         
@@ -91,7 +91,7 @@ router.get('/libros/:id', async (req, res) => {
         
             
         
-        console.log('Libros: '+ librosCategoria);
+        //console.log('Libros: '+ librosCategoria);
         if(librosCategoria){          
             res.send({ ok: true, resultado: librosCategoria});
 
