@@ -1,33 +1,22 @@
 const Categoria = require('../models/categoriaModel');
+const Libro = require('../models/libroModel');
+
 const validate = require('./validate-token');
 const express = require('express');
 let router = express.Router();
 
-async function obtenerUltimaCAt() {
+async function obtenerUltimaCategoria() {
     try {
-        // Consultar todos los usuarios ordenados por el ID de manera descendente
-
-        const allGenero = await Categoria.find();
-        let ultimoCat = 1;
-        allGenero.forEach(g => {
-            //console.log(usuario);
-            if (g.numCategoria > ultimoCat) {
-                ultimoCat = g.numCategoria
-            }
-        });
-
-        // Si se encontró un usuario, devolver su ID + 1, de lo contrario devolver 1
-        if (ultimoCat > 0) {
-            //console.log(ultimoUsuario);
-            return ultimoCat + 1;
-        } else {
-            return 1; // Establecer el ID en 1 si no hay usuarios
-        }
-    } catch (error) {
-        console.error('Error al obtener el último NUM de categoria:', error);
-        throw error; // Puedes manejar el error según sea necesario en tu aplicación
-    }
+        const ultimaCategoria = await Categoria.find().sort({ num_categoria: -1 }).limit(1);
+        const nuevoNumero = ultimaCategoria.length > 0 ? ultimaCategoria[0].num_categoria + 1 : 1;
+        //console.log('Nuevo número de categoría:', nuevoNumero);
+        return nuevoNumero;
+      } catch (error) {
+        console.error('Error al obtener la última categoría:', error);
+        throw error;
+      }
 }
+
 
 router.post('/add-categoria', validate.protegerRuta(['editor','soid','admin']) ,async (req, res) => {
     try {
@@ -37,22 +26,21 @@ router.post('/add-categoria', validate.protegerRuta(['editor','soid','admin']) ,
         if (!nombre) {
             return res.status(400).json({ mensaje: 'El nombre es obligatorio' });
         }
-        let ultCat = await obtenerUltimaCAt();
-        // Crear una nueva instancia del modelo
-        const nuevaCategoria = new Categoria({nombre,ultCat});
-
-        // Guardar la nueva población en la base de datos
-        await nuevaCategoria.save();
-
-        // Enviar una respuesta exitosa
-        res.status(201).json({
-            mensaje: 'Categoria creada exitosamente',
-            poblacion: nuevaCategoria
+        const num_categoria = await obtenerUltimaCategoria();
+        // Verifica que numCategoria no sea null o undefined
+        if (num_categoria == null) {
+          throw new Error('No se pudo obtener un número válido para la categoría.');
+        }
+        const nuevaCategoria = new Categoria({
+          nombre: nombre,
+          num_categoria: num_categoria
         });
-    } catch (error) {
-        console.error('Error al crear categoria:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor' });
-    }
+        await nuevaCategoria.save();
+        console.log('Categoría creada con éxito:', nuevaCategoria);
+      } catch (error) {
+        console.error('Error al crear la categoría:', error);
+        throw error;
+      }
 });
 
 router.get('/', async (req, res) => {
@@ -69,6 +57,56 @@ router.get('/', async (req, res) => {
           error: err.message
       });
   }
+});
+
+router.get('/libros/:id', async (req, res) => {
+    try {
+        const categoria = req.params.id
+        const libros = await Libro.find({activo: true}).populate({
+            path: 'id_autor',
+            populate: [
+              { path: 'generos_autor' },  // Poblar generos dentro de Autor
+              { path: 'libros_autor' }    // Poblar libros dentro de Autor
+            ]
+          }) 
+          .populate('categorias_libro') // Poblar datos de la categoría
+          .populate('generos_libro')// Poblar datos del género
+          .populate('resenas_libro') 
+          .populate('added_usuario')
+          .exec();;
+        console.log('Categoria: '+categoria);
+
+        const librosCategoria = [];
+        
+        for (let z = 0; z < libros.length; z++) {  // Cambia <= por <
+            if (libros[z] && libros[z].categorias_libro) {
+                for (let i = 0; i < libros[z].categorias_libro.length; i++) {  // Cambia <= por <
+                    let encontrado = libros[z].categorias_libro[i]?.id;  // Usa el operador opcional ?. para evitar undefined
+                    if (categoria === encontrado) {
+                        librosCategoria.push(libros[z]);
+                    }
+                }
+            }
+        }
+        
+            
+        
+        console.log('Libros: '+ librosCategoria);
+        if(librosCategoria){          
+            res.send({ ok: true, resultado: librosCategoria});
+
+        }else{
+            res.status(404).send({ ok: false, error: "No se encontraron libros de esa categoria" });
+
+        }
+
+    }
+    catch(err) {
+      res.status(500).send({
+          ok: false,
+          error: err.message
+      });
+    }
 });
 
 module.exports = router;
