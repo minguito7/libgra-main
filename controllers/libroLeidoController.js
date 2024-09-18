@@ -151,40 +151,46 @@ router.get('/comprobar-pagina/:idUsuario/:idLibro', validate.protegerRuta(''), a
 
 
 //DEVOLVER TODOS LOS LIBROS LEIDOS POR UN USUARIO
-router.get('/usuario/:id', validate.protegerRuta(''),  async (req, res) => {
+router.get('/usuario/:userId', validate.protegerRuta(''), async (req, res) => {
   try {
-    
-    // Busca el registro del libro leído por el usuario
-    const libroLeido = await LibroLeidoModel.find({ id_usuario: req.params.id })
-    .sort({ fecha: -1 })
-    .populate({
-      path: 'id_usuario',
-      populate: [
-        { path: 'ID_POBLACION' },  
-        { path: 'AMIGOS' }
-      ]
-    })
-    .populate({
-      path: 'id_libro',
-      populate: [
-        { path: 'added_usuario' },  
-        { path: 'categorias_libro' },
-        { path: 'generos_libro' },
-        { path: 'resenas_libro' },
-      ]
-    })
-    .exec();
+    // Obtener los distintos registros de libros leídos por el usuario, agrupados por id_libro
+    const librosLeidos = await LibroLeidoModel.findById({id_usuario:req.params.userId})
+      .populate({
+        path: 'id_libro',
+        populate: [
+          { path: 'added_usuario' },
+          { path: 'categorias_libro' },
+          { path: 'generos_libro' },
+          { path: 'resenas_libro' }
+        ]
+      })
+      .exec();
 
-    if (!libroLeido) {
-      return res.status(404).json({ error: 'Registro no encontrado' });
+      let librosUnicos = [];
+      console.log("LIBROS leidos: "+ librosLeidos);
+
+      for (let i = 0; i <= librosLeidos.length; i++) {
+        let libro = librosLeidos[i];
+        
+        // Verificamos si el id_libro ya está en librosUnicos
+        if (!librosUnicos.some(libroUnico => libroUnico.id_libro === libro.id_libro)) {
+          librosUnicos.push(libro);
+        }
+      }
+      
+    console.log("LIBROS UNICOS: "+librosUnicos);
+
+    if (!librosUnicos.length) {
+      return res.status(404).json({ error: 'No se encontraron registros de libros leídos' });
     }
-   
-    res.send({ ok: true, resultado: libroLeido});  
+
+    res.send({ ok: true, resultado: librosUnicos });
 
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener los datos de lectura' + error });
+    res.status(500).json({ error: 'Error al obtener los datos de lectura: ' + error });
   }
-})
+});
+
 
 //AÑADIR UN LIBRO
 router.post('/add-libro-leido', validate.protegerRuta(''),  async (req, res) => {

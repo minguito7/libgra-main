@@ -166,6 +166,7 @@ router.post('/registro-admin', validate.protegerRuta(''), upload.single('myFile'
         // Determinar la ruta del avatar
         const avatarPath = req.file ? req.file.path : 'public/uploads/avatar/prede.png';
 
+ 
         // Crear un nuevo usuario
         const nuevoUsuario = new Usuario({
             DNI,
@@ -397,6 +398,27 @@ router.post('/modify-avatar/:id', upload.single('myFile'), async(req, res) => {
 
         // Actualizar el avatar del usuario
         usuario.AVATAR = req.file.path;
+        if(usuario.AVATAR){
+            const baseDir2 = 'avatar';
+                const baseDirIndex2 = usuario.AVATAR.indexOf(baseDir2);
+
+                if (baseDirIndex2 !== -1) {
+                    const relativePath2 = usuario.AVATAR.substring(baseDirIndex2 + baseDir2.length);
+
+                    console.log("Pruebaaa: " + relativePath2);
+
+                    usuario.AVATAR = path.join(baseDir2, relativePath2);
+                    usuario.AVATAR = usuario.AVATAR.replace(/\\/g, '/');
+
+                    console.log("Archivo subida: " + usuario.AVATAR);
+                }
+            
+        }else{
+            res.status(400).json({ mensaje: 'Error no has enviado un AVATAR' });
+
+        }
+        console.log("ruta reemplazada avatar: "+usuario.AVATAR);
+
         await usuario.save();
 
         res.status(200).send({
