@@ -1,0 +1,10 @@
+{
+    "service":"gmail",
+    "auth":{
+        "type": "OAuth2",
+        "user": "libgra.registro@gmail.com",
+        "clientId": "56538873999-a4qunj4a6fvtcjek65g39sfj30flsfp0.apps.googleusercontent.com",
+        "clientSecret": "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",
+        "refreshToken": "1//04IMVq3iHMlEvCgYIARAAGAQSNwF-L9IrXFOO11id-zO_4bEwbEfIx-dUjpWPi86l7yXO4pdZE6z3r48xHbYw-MQD01dlDDrPWDE"
+    }
+}

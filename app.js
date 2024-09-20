@@ -11,6 +11,7 @@ const poblacion = require('./controllers/poblacionController.js');
 const genero = require('./controllers/generoController.js');
 const autor = require('./controllers/autorController.js');
 const categoria = require('./controllers/categoriaController.js');
+const contacto = require('./controllers/contactoController.js');
 
 const methodOverride = require('method-override');
 const cors = require('cors');
@@ -74,7 +75,7 @@ app.use('/poblaciones', poblacion);
 app.use('/generos', genero);
 app.use('/autores', autor);
 app.use('/categorias', categoria);
-
+app.use('/contacto',contacto);
 
 // Escuchar en el puerto especificado
 app.listen(PORT, () => {
