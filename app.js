@@ -18,6 +18,8 @@ const cors = require('cors');
 const app = express();
 // función middleware para servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public/uploads')));
+
+
 app.use(cors({
     origin: 'http://localhost:4200',
     optionsSuccessStatus: 200, 

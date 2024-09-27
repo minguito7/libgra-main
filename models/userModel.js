@@ -21,7 +21,8 @@ const userSchema = new mongoose.Schema({
     ACTIVO: { type: Boolean, default: 1 },
     NUM_USUARIO: { type: Number, unique: true },
     AVATAR: { type: String },
-    AMIGOS: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }], // Referencia al esquema de usuario]
+    AMIGOS: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }],
+    LIBROS: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Libro'}] // Referencia al esquema de usuario]
 });
 
 // Crear el modelo de usuario a partir del esquema

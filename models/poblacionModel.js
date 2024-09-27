@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const poblacionSchema = new mongoose.Schema({
     // Otros campos de la tabla poblacion
     nombre: { type: String, required: true },
+    numPoblacion: { type: Number, unique:true }
 
 });
 

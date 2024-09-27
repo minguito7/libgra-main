@@ -576,6 +576,7 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
             
             return res.status(404).send('Libro no encontrado');
         }
+        console.log(book);
         //res.setHeader('Access-Control-Allow-Origin', '*')
         //res.setHeader('Content-Type', 'application/pdf');
         res.status(200).json(book);

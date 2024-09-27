@@ -20,7 +20,7 @@ const titulos = {
 const validateController = require  ('./validate-token.js');
 
 const directorioPadre = path.join(__dirname, '..');
-let guardarImagen = path.join('/public/uploads/avatar/');
+let guardarImagen = path.join(directorioPadre+'/public/uploads/avatar/');
 
 
 
@@ -54,7 +54,7 @@ async function obtenerVariantesNickname(nickName) {
         }
 
         suffix++;
-    }avatarPath
+    }
 
     return variantes;
 }
@@ -136,10 +136,11 @@ function calcularLetraDNI(dniNumeros) {
 
 router.post('/registro', upload.single('myFile'), async (req, res) => {
     try {
-        //console.log('Request Body:', req.body);
-//console.log('Uploaded File:', req.file);
+        console.log('Request Body:', req.body);
+        console.log('Uploaded File:', req.file);
 
         const { DNI, NAMEAPP, PASSWORD, NOMBRE, APELLIDOS, EMAIL, DIRECCION, ID_POBLACION, COD_POSTAL, SEXO } = req.body;
+        
 
         if(!DNI){
             return res.status(400).send({
@@ -193,14 +194,22 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
 
         // Obtener el último número de usuario
         const detUltimoNum = await obtenerUltimoUsuario();
-
+        let avatarPath = '';
         // Si se envía un archivo de imagen
-        if (req.file && req.file.mimetype.startsWith('image')) {
-            const imageData = fs.readFileSync(req.file.path);
-            imagenBase64 = `data:${req.file.mimetype};base64,${imageData.toString('base64')}`;
-            fs.unlinkSync(req.file.path);
-        } else if (req.body.imagen && req.body.imagen.startsWith('data:image')) {
-            imagenBase64 = req.body.imagen;
+        if (req.file) {
+            avatarPath = req.file.path;
+                const baseDir = 'avatar';
+                const baseDirIndex = avatarPath.indexOf(baseDir);
+                console.log("aquiiiiii avatar usuario: "+ baseDirIndex);
+                
+                if (baseDirIndex !== -1) {
+                    const relativePath = avatarPath.substring(baseDirIndex + baseDir.length);
+                    avatarPath = path.join(baseDir, relativePath);
+
+                    console.log("Imagen subida: " + avatarPath);
+                }
+        } else {
+            console.log("NO HAY req.file.path");
         }
 
         // Determinar el título según el sexo
@@ -208,8 +217,9 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
         const titulo1 = titulos[SEXO.toLowerCase()] || 'Sre. ';
         
         // Determinar la ruta del avatar
-        const avatarPath = req.file ? req.file.path : 'public/uploads/avatar/prede.png';
-
+        if(!avatarPath){
+            avatarPath = req.file ? req.file.path : 'avatar/prede.png';
+        }
         // Crear un nuevo usuario
         const nuevoUsuario = new Usuario({
             DNI,
@@ -227,8 +237,11 @@ router.post('/registro', upload.single('myFile'), async (req, res) => {
             AVATAR: avatarPath
         });
         //console.log(ID_POBLACION)
+
         // Guardar el nuevo usuario en la base de datos
         const usuarioGuardado = await nuevoUsuario.save();
+        console.log(usuarioGuardado)
+
         res.status(200).send({
             ok: true,
             resultado: usuarioGuardado
@@ -306,10 +319,15 @@ router.get('/validate-token', (req, res) => {
         // Token inválido o expirado
         return res.status(401).json({ valid: false, message: 'Token inválido' });
       }
-      const usuarioLogged = await Usuario.findOne({EMAIL: decoded.login});
+      const usuarioLogged = await Usuario.findOne({EMAIL: decoded.login})
+          .populate('ID_POBLACION') // Poblar datos de la categoría
+          .populate('LIBROS')// Poblar datos del género
+          .populate('AMIGOS') 
+          .exec();
+      
       // Token válido
       //console.log(usuarioLogged);
-      res.json({ valid: true, usuarioLogged });
+      res.json({ valid: true,usuarioLogged});
     });
   });
 
