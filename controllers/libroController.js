@@ -7,7 +7,7 @@ const multer = require('multer');
 const validate = require('./validate-token');
 const Libro  = require('../models/libroModel.js'); // Asegúrate de que esta ruta es correcta
 const { PDFDocument, rgb } = require('pdf-lib');
-
+const mongoose = require('mongoose');
 const TOKEN_SECRET = 'secreto';
 const Usuario = require('../models/userModel.js');
 const Autor = require('../models/autorModel.js');
@@ -45,11 +45,23 @@ async function obtenerUsuario(req) {
 
     return decoded;
 }
-
+// Definir tipos de archivo permitidos
+const fileFilter = (req, file, cb) => {
+    console.log(file.mimetype)
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+  
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true); // Acepta el archivo
+    } else {
+     console.log('Tipo de archivo no soportado 1.0');
+      cb(new Error('Tipo de archivo no soportado 2.0'), false); // Rechaza el archivo
+    }
+  };
 
 // Configuración del almausuariocenamiento de archivos
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
+        console.log(file.mimetype)
         // Define las carpetas para imágenes y PDFs
         if (file.mimetype.startsWith('image/')) {
             cb(null, guardarImagen); // Carpeta para imágenes
@@ -104,6 +116,7 @@ const storage = multer.diskStorage({
             // Manejar errores aquí
             cb(new Error(`Error al obtener usuario: ${error.message}`));
         }
+        
     }
 });
 
@@ -452,12 +465,14 @@ router.post('/add-libro', validate.protegerRuta(['editor','soid','admin']), uplo
             'imgLibros/portadaPrede3.jpeg'
         ];
         let portadaPrede;
-
         req.files.forEach(file => {
+            console.log(file.path)
+
             if (file.mimetype.startsWith('image/')) {
                 // Procesar imágenes
                 //esp._id
                 avatarPath = file.path;
+
                 const baseDir = 'imgLibros';
                 const baseDirIndex = avatarPath.indexOf(baseDir);
                 console.log("aquiiiiii portada: "+ baseDirIndex);
@@ -505,6 +520,25 @@ router.post('/add-libro', validate.protegerRuta(['editor','soid','admin']), uplo
             console.log("Portada predeterminada asignada: " + avatarPath);
         }
 
+        //GENEROS
+        const generosLibro = req.body.generos_libro;
+
+        // Si es un array de géneros (varios ObjectId)
+        let generosLibroArray;
+
+        if (typeof generosLibro === 'string') {
+            // Verifica si es una cadena con IDs separados por comas
+            if (generosLibro.includes(',')) {
+              generosLibroArray = generosLibro.split(',').map(id => id.trim());
+            } else {
+              // Si es un único ID
+              generosLibroArray = [generosLibro.trim()];
+            }
+          } else {
+            // Si ya es un array (por ejemplo, en otras situaciones)
+            generosLibroArray = generosLibro;
+          }
+
         const token_add = req.header('Authorization').split(' ');
         const usuario = validate.obtenerUsuarioDesdeToken(token_add[1]);
         const find_usuario = await Usuario.find({ EMAIL: usuario });
@@ -527,7 +561,7 @@ router.post('/add-libro', validate.protegerRuta(['editor','soid','admin']), uplo
             categorias_libro,
             isbn,
             fecha_publicacion,
-            generos_libro,
+            generos_libro:generosLibroArray,
             descripcion,
             activo,
             archivo: archivoPath, // Usa la ruta del PDF modificado
@@ -595,10 +629,11 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
 
 // Ruta para actualizar un libro
 router.put('/edit-libro/:id', validate.protegerRuta(['editor','admin','soid']), upload.array('files', 2), async (req, res) => {
-    try {home
+    try {
         const { titulo, id_autor, id_categoria, isbn, fecha_publicacion, id_genero, descripcion, activo } = req.body;
         let archivoPath;
         let avatarPath;
+        const libroId = req.params.id;
 
         const imagenesPredeterminadas = [
             'public/uploads/imgLibro/portadaPrede1.png',

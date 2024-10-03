@@ -17,7 +17,6 @@ async function obtenerUltimaCategoria() {
       }
 }
 
-
 router.post('/add-categoria', validate.protegerRuta(['editor','soid','admin']) ,async (req, res) => {
     try {
         const { nombre } = req.body;
