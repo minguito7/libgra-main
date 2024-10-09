@@ -239,7 +239,7 @@ GET ARCHIVO PDF - 159
 router.get('/novedades-libros', async (req, res) => {
     try {
       const libros = await Libro.find({activo:true}).sort({ createdAt: -1 }) // Ordenar por fecha de creación en orden descendente
-          .limit(6) // Limitar los resultados a los últimos 5 libros    
+          .limit(8) // Limitar los resultados a los últimos 5 libros    
           .populate({
             path: 'id_autor',
             populate: [
@@ -593,7 +593,9 @@ router.post('/add-libro', validate.protegerRuta(['editor','soid','admin']), uplo
 router.get('/:id', validate.protegerRuta(''), async (req, res) => {
     const { id } = req.params;
     try {
+        console.log(id)
 
+        //res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200/');
         const book = await Libro.findById(id).populate({
             path: 'id_autor',
             populate: [
@@ -610,7 +612,7 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
             
             return res.status(404).send('Libro no encontrado');
         }
-        console.log(book);
+        
         //res.setHeader('Access-Control-Allow-Origin', '*')
         //res.setHeader('Content-Type', 'application/pdf');
         res.status(200).json(book);
@@ -622,7 +624,29 @@ router.get('/:id', validate.protegerRuta(''), async (req, res) => {
 });
 
 // Ruta para obtener los últimos 5 libros añadidos
+router.get('/devolver-url/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        
 
+        //res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200/');
+        const book = await Libro.findById(id)
+        console.log(book.archivo)
+        if (!book) {
+            
+            return res.status(404).send('Libro no encontrado');
+        }
+        
+                // Cambia el tipo de contenido a un tipo que no desencadene la descarga
+                res.setHeader('Content-Type', 'application/json'); // O el tipo que desees
+                return res.status(200).json({ resultado: book.archivo,message: 'La descarga ha sido cancelada.' });
+                
+        
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Hubo un error en el servidor al buscar el libro' + error);
+    }
+});
 
 
 

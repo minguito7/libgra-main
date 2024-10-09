@@ -18,7 +18,7 @@ const cors = require('cors');
 const app = express();
 // función middleware para servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public/uploads')));
-
+// Servir archivos estáticos (como PDFs)
 
 app.use(cors({
     origin: 'http://localhost:4200',
@@ -27,6 +27,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-Length', 'X-Kuma-Revision'], 
 }));
+
+
+
 // Configuración de la URL base desde las variables de entorno
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
