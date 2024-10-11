@@ -16,6 +16,8 @@ const contacto = require('./controllers/contactoController.js');
 const methodOverride = require('method-override');
 const cors = require('cors');
 const app = express();
+const connectDB = require('./db'); // Asegúrate de que la ruta sea correcta
+
 // función middleware para servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public/uploads')));
 // Servir archivos estáticos (como PDFs)
@@ -39,17 +41,12 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 
 // URL de conexión a la base de datos
-const DB_URI = 'mongodb+srv://minguito0799:Ernano21@cluster0.6b7qgaf.mongodb.net/db_libfree?retryWrites=true&w=majority';
+//const DB_URI = 'mongodb+srv://minguito0799:Ernano21@cluster0.6b7qgaf.mongodb.net/db_libfree?retryWrites=true&w=majority'; ONLINE
+//const DB_URI='mongodb://minguito:Ernano21@localhost:27017'; LOCAL
 // Opciones de configuración de mongoose
 
 // Conectar a la base de datos
-mongoose.connect(DB_URI)
-    .then(() => {
-        console.log('Conexión exitosa a la base de datos');
-    })
-    .catch(err => {
-        console.error('Error al conectar a la base de datos:', err);
-    });
+connectDB();
 
 
 // Permitir solicitudes desde el frontend (por ejemplo, localhost:4200)
