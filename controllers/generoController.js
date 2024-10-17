@@ -76,7 +76,7 @@ router.get('/:id', async (req, res) => {
       .populate('generos_libro')// Poblar datos del género
       .populate('resenas_libro') 
       .populate('added_usuario')
-      .exec();;
+      .exec();
 
      
       librosGeneros.forEach((libro)=>{
@@ -93,7 +93,7 @@ router.get('/:id', async (req, res) => {
         
       });
       if (librosGeneroIndicado.length > 0) {
-          res.send({ ok: true, resultado: librosGeneroIndicado});
+          res.send({ ok: true, resultado: librosGeneroIndicado, nombreGenero: genero.nombre});
       } else {
           res.status(404).send({ ok: false, error: "No se encontraron libros para ese genero" });
       }

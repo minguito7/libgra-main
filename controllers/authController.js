@@ -305,32 +305,37 @@ router.post('/login', async (req, res) => {
 
 // Ruta para validar el token
 router.get('/validate-token', (req, res) => {
-    // Obtener el token del encabezado Authorization
     const authHeader = req.headers['authorization'];
     
     if (!authHeader) {
       return res.status(401).json({ valid: false, message: 'Token no proporcionado' });
     }
   
-    // Extraer el token (quitar 'Bearer ' del encabezado)
     const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
-    
-    // Verificar y decodificar el token
+  
     jwt.verify(token, TOKEN_SECRET, async (err, decoded) => {
       if (err) {
-        // Token inválido o expirado
         return res.status(401).json({ valid: false, message: 'Token inválido' });
       }
-      const usuarioLogged = await Usuario.findOne({EMAIL: decoded.login})
-          .populate('ID_POBLACION') // Poblar datos de la categoría
-          .populate('LIBROS')// Poblar datos del género
-          .populate('AMIGOS') 
+  
+      try {
+        const usuarioLogged = await Usuario.findOne({ EMAIL: decoded.login })
+          .populate('ID_POBLACION')
+          .populate('LIBROS')
+          .populate('AMIGOS')
           .exec();
-      
-      // Token válido
-      //console.log(usuarioLogged);
-      res.json({ valid: true,usuarioLogged});
+  
+        if (!usuarioLogged) {
+          return res.status(404).json({ valid: false, message: 'Usuario no encontrado' });
+        }
+  
+        // Token válido
+        res.json({ valid: true, usuarioLogged });
+      } catch (error) {
+        return res.status(500).json({ valid: false, message: 'Error al buscar usuario', error });
+      }
     });
   });
+  
 
 module.exports = router;
